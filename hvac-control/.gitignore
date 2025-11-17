@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# But don't ignore deployed build at root
+!/assets
+!/build.html
+
 # Environment variables
 .env
 .env.local
