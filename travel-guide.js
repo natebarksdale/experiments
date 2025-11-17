@@ -138,12 +138,12 @@ const AppState = {
 // Writing Style Personas
 const WRITING_STYLES = {
     parker: {
-        name: "Dorothy Parker",
+        name: "Algonquin RoundTable",
         prompt: "Write in the style of Dorothy Parker - razor-sharp wit, biting humor, and devastating one-liners. Use elegant yet caustic prose with sophisticated observations and perfectly timed sarcasm.",
         icon: "cocktail"
     },
     thompson: {
-        name: "Hunter S. Thompson",
+        name: "Gonzo journalism",
         prompt: "Write in the style of Hunter S. Thompson - gonzo journalism with wild imagery, sharp cultural criticism, dark humor, and surreal observations. Use punchy, irreverent prose with vivid metaphors.",
         icon: "sunglasses"
     },
@@ -153,7 +153,7 @@ const WRITING_STYLES = {
         icon: "compass"
     },
     wodehouse: {
-        name: "P.G. Wodehouse",
+        name: "Victorian Butler",
         prompt: "Write in the style of P.G. Wodehouse - delightfully absurd, charming, and whimsical prose with impeccable comedic timing. Use elaborate metaphors, British wit, and cheerfully convoluted sentences.",
         icon: "tophat"
     },

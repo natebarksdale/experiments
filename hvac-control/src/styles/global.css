@@ -1,0 +1,96 @@
+:root {
+  /* Tufte-inspired monochromatic palette */
+  --black: #1a1a1a;
+  --gray-900: #2d2d2d;
+  --gray-700: #4a4a4a;
+  --gray-500: #6b6b6b;
+  --gray-300: #a8a8a8;
+  --gray-200: #d4d4d4;
+  --gray-100: #e8e8e8;
+  --gray-50: #f5f5f5;
+  --white: #ffffff;
+
+  /* Semantic color accents - used sparingly */
+  --heat: #c41e3a;
+  --heat-light: #e85d72;
+  --cool: #1e5a9c;
+  --cool-light: #4a8fd4;
+
+  /* Typography */
+  --font-serif: 'Spectral', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* Spacing scale */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-8: 3rem;
+
+  /* Borders */
+  --border-thin: 1px solid var(--gray-200);
+  --border-medium: 2px solid var(--gray-300);
+  --border-accent: 2px solid var(--black);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--white);
+  color: var(--black);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* Remove default transitions for snappier feel */
+* {
+  transition: none;
+}
+
+button {
+  transition: opacity 0.15s, background 0.15s;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Selection */
+::selection {
+  background: var(--black);
+  color: var(--white);
+}

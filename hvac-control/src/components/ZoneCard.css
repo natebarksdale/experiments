@@ -1,0 +1,234 @@
+.zone-card {
+  position: relative;
+  background: var(--warm-white);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  cursor: pointer;
+  overflow: hidden;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+}
+
+.zone-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--off-color);
+}
+
+.zone-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Theme variations */
+.zone-card--heat::before {
+  background: var(--heat-primary);
+}
+
+.zone-card--cool::before {
+  background: var(--cool-primary);
+}
+
+.zone-card--off {
+  opacity: 0.85;
+}
+
+/* Header */
+.zone-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+  gap: var(--space-sm);
+}
+
+.zone-card__name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--deep-brown);
+  line-height: 1.2;
+}
+
+.zone-card__status-badge {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-inset);
+  border-radius: var(--radius-full);
+  color: var(--warm-gray);
+  font-weight: 600;
+}
+
+.zone-card--heat .zone-card__status-badge {
+  background: rgba(232, 106, 51, 0.15);
+  color: var(--rust);
+}
+
+.zone-card--cool .zone-card__status-badge {
+  background: rgba(74, 144, 184, 0.15);
+  color: var(--cool-primary);
+}
+
+/* Temperature display */
+.zone-card__temp-display {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0;
+}
+
+.zone-card__temp-value {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.temp-number {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 400;
+  color: var(--deep-brown);
+}
+
+.temp-unit {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--warm-gray);
+  margin-left: 0.125rem;
+}
+
+.temp-na {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  color: var(--warm-gray);
+}
+
+/* Target temperature */
+.zone-card__target {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.75rem;
+  color: var(--warm-gray);
+  font-family: var(--font-mono);
+}
+
+.temp-diff {
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.6875rem;
+}
+
+.temp-diff--above {
+  background: rgba(232, 106, 51, 0.15);
+  color: var(--rust);
+}
+
+.temp-diff--below {
+  background: rgba(74, 144, 184, 0.15);
+  color: var(--cool-primary);
+}
+
+/* Footer */
+.zone-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: var(--space-sm);
+}
+
+.zone-card__update-time {
+  font-size: 0.6875rem;
+  color: var(--warm-gray);
+  font-family: var(--font-mono);
+}
+
+.zone-card__update-time.stale {
+  color: var(--rust);
+  font-weight: 500;
+}
+
+.zone-card__indicator {
+  display: flex;
+  align-items: center;
+}
+
+.indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.zone-card--heat .indicator-dot {
+  color: var(--heat-primary);
+}
+
+.zone-card--cool .indicator-dot {
+  color: var(--cool-primary);
+}
+
+/* Glow effect - removed for cleaner look */
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .zone-card {
+    padding: var(--space-sm);
+  }
+
+  .zone-card__header {
+    margin-bottom: 0.375rem;
+  }
+
+  .zone-card__name {
+    font-size: 0.8125rem;
+  }
+
+  .zone-card__status-badge {
+    font-size: 0.625rem;
+    padding: 0.1875rem 0.375rem;
+  }
+
+  .temp-number {
+    font-size: 1.75rem;
+  }
+
+  .temp-unit {
+    font-size: 1rem;
+  }
+
+  .zone-card__temp-display {
+    margin: 0.375rem 0;
+  }
+
+  .zone-card__target {
+    font-size: 0.6875rem;
+  }
+
+  .zone-card__footer {
+    padding-top: 0.375rem;
+  }
+
+  .zone-card__update-time {
+    font-size: 0.625rem;
+  }
+}

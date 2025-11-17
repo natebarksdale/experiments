@@ -1,0 +1,122 @@
+.app-tufte {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navigation - minimal, precise */
+.app-nav-tufte {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  border-bottom: var(--border-thin);
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  align-items: center;
+}
+
+.app-nav-tufte button {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  padding: var(--s-2) var(--s-4);
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  cursor: pointer;
+  font-weight: 400;
+  position: relative;
+}
+
+.app-nav-tufte button:hover {
+  color: var(--black);
+}
+
+.app-nav-tufte button.active {
+  color: var(--black);
+  font-weight: 500;
+}
+
+.app-nav-tufte button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -11px;
+  left: var(--s-4);
+  right: var(--s-4);
+  height: 2px;
+  background: var(--black);
+}
+
+.nav-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--s-2);
+}
+
+.btn-auth,
+.btn-refresh {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: var(--s-2) var(--s-3);
+  background: none;
+  border: var(--border-thin);
+  color: var(--gray-700);
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.btn-auth:hover,
+.btn-refresh:hover {
+  border-color: var(--black);
+  color: var(--black);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-refresh:disabled:hover {
+  border-color: var(--gray-200);
+}
+
+.btn-refresh {
+  font-size: 1rem;
+  padding: var(--s-1) var(--s-3);
+}
+
+/* Main content */
+.app-main-tufte {
+  flex: 1;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .app-nav-tufte {
+    padding: var(--s-3) var(--s-3) var(--s-2);
+  }
+
+  .app-nav-tufte button {
+    font-size: 0.75rem;
+    padding: var(--s-2) var(--s-3);
+  }
+
+  .btn-auth {
+    font-size: 0.6875rem;
+    padding: var(--s-2) var(--s-2);
+  }
+
+  .btn-refresh {
+    padding: var(--s-1) var(--s-2);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-nav-tufte button {
+    padding: var(--s-1) var(--s-2);
+  }
+
+  .nav-actions {
+    gap: var(--s-1);
+  }
+}

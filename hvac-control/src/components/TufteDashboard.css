@@ -1,0 +1,239 @@
+.tufte-dashboard {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--s-3) var(--s-4) var(--s-2);
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: var(--border-accent);
+}
+
+.dashboard-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Floor sections */
+.floor-group {
+  margin-bottom: var(--s-3);
+}
+
+.floor-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-500);
+  margin-bottom: var(--s-1);
+  border-bottom: var(--border-thin);
+  padding-bottom: var(--s-1);
+}
+
+/* Zone group - contains main row and optional lights row */
+.zone-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Zone rows - small multiples */
+.zone-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 70px 70px 28px;
+  gap: var(--s-1);
+  align-items: center;
+  padding: var(--s-1) var(--s-2);
+  border-bottom: var(--border-thin);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+/* Light-only zones (no HVAC) */
+.zone-row--lights-only {
+  grid-template-columns: minmax(0, 1fr);
+  cursor: default;
+}
+
+.zone-row:hover {
+  background: var(--gray-50);
+}
+
+.zone-row:active {
+  background: var(--gray-100);
+}
+
+/* Pending change indicator */
+.zone-row--pending {
+  background: var(--gray-50);
+  position: relative;
+}
+
+.zone-row--pending::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--black);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Zone state indicator */
+.zone-state {
+  font-size: 1rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Zone name */
+.zone-name {
+  font-weight: 400;
+  color: var(--black);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Temperature */
+.zone-temp {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.temp-current {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.temp-target {
+  font-size: 0.5625rem;
+  color: var(--gray-500);
+}
+
+/* Delta */
+.zone-delta {
+  font-size: 0.5625rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.zone-delta.above {
+  color: var(--heat);
+}
+
+.zone-delta.below {
+  color: var(--cool);
+}
+
+.zone-delta.at {
+  color: var(--gray-300);
+}
+
+/* Lights row - buttons for direct control */
+.zone-lights-row {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  padding-top: 0;
+  border-bottom: var(--border-thin);
+}
+
+.light-button-dash {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-2);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.light-button-dash:hover {
+  background: var(--white);
+  border-color: var(--gray-500);
+}
+
+.light-button-dash--on {
+  background: var(--white);
+  border-color: var(--black);
+}
+
+.light-button-dash--pending {
+  position: relative;
+}
+
+.light-button-dash--pending::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--black);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.light-button-dash__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.light-button-dash__name {
+  font-weight: 500;
+  color: var(--black);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Trend sparkline */
+.zone-trend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: visible;
+  min-height: 20px;
+}
+
+/* Footer */
+.dashboard-footer {
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: var(--border-thin);
+}
+
+.footnote {
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .tufte-dashboard {
+    padding: var(--s-3) var(--s-3) var(--s-2);
+  }
+}
