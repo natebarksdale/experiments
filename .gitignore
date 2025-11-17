@@ -1,0 +1,22 @@
+# Environment files
+.env
+.env.local
+
+# API keys and secrets
+*.key
+secrets.txt
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,69 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject API Key
+        run: |
+          # Obfuscate the API key (reverse + base64) to prevent casual scraping
+          # Note: This is NOT real security - the key is site-locked on OpenRouter
+          # Use printf instead of echo to avoid adding newline
+
+          # Debug: Check if secret is set
+          if [ -z "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+            echo "❌ ERROR: OPENROUTER_API_KEY secret is not set!"
+            echo "Please set it in: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+          # Obfuscate the key
+          OBFUSCATED=$(printf '%s' "${{ secrets.OPENROUTER_API_KEY }}" | rev | base64 -w 0)
+
+          # Debug: Show obfuscated length (not the actual key)
+          echo "Obfuscated key length: ${#OBFUSCATED} chars"
+          echo "First 10 chars: ${OBFUSCATED:0:10}..."
+
+          # Replace placeholder
+          sed -i "s|__OPENROUTER_API_KEY__|$OBFUSCATED|g" travel-guide.js
+
+          # Verify replacement worked
+          if grep -q "__OPENROUTER_API_KEY__" travel-guide.js; then
+            echo "❌ ERROR: Placeholder was not replaced!"
+            exit 1
+          fi
+
+          echo "✅ API key obfuscated and injected successfully"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
