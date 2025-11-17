@@ -1,4 +1,6 @@
-import Sparkline from './Sparkline';
+import { useState } from 'react';
+import RoomRow from './RoomRow';
+import RoomModal from './RoomModal';
 import './TufteDashboard.css';
 
 /**
@@ -7,7 +9,6 @@ import './TufteDashboard.css';
  */
 const getSparklineData = (zoneName, logs) => {
   if (!logs || logs.length === 0) {
-    console.log(`No logs available for ${zoneName}`);
     return [];
   }
 
@@ -34,37 +35,31 @@ const getSparklineData = (zoneName, logs) => {
   return sparklineData.reverse();
 };
 
-export default function TufteDashboard({ zones, lightOnlyZones = [], lights = [], logs, onZoneClick, onToggleLight }) {
-  // Combine HVAC zones with light-only zones
-  const allZones = [...zones, ...lightOnlyZones];
-
-  // Group by floor
+export default function TufteDashboard({ zones, lightOnlyZones = [], lights = [], logs, onUpdateZone, onToggleLight }) {
+  const [selectedZone, setSelectedZone] = useState(null);
+  // Group by floor, separating HVAC zones from light-only zones
   const floors = [
-    { name: '3rd Floor', zones: allZones.filter(z => z.floor === 3) },
-    { name: '2nd Floor', zones: allZones.filter(z => z.floor === 2) },
-    { name: '1st Floor', zones: allZones.filter(z => z.floor === 1) },
-    { name: 'Basement', zones: allZones.filter(z => z.floor === 0) },
+    {
+      name: '3rd Floor',
+      hvacZones: zones.filter(z => z.floor === 3),
+      lightOnlyZones: lightOnlyZones.filter(z => z.floor === 3),
+    },
+    {
+      name: '2nd Floor',
+      hvacZones: zones.filter(z => z.floor === 2),
+      lightOnlyZones: lightOnlyZones.filter(z => z.floor === 2),
+    },
+    {
+      name: '1st Floor',
+      hvacZones: zones.filter(z => z.floor === 1),
+      lightOnlyZones: lightOnlyZones.filter(z => z.floor === 1),
+    },
+    {
+      name: 'Basement',
+      hvacZones: zones.filter(z => z.floor === 0),
+      lightOnlyZones: lightOnlyZones.filter(z => z.floor === 0),
+    },
   ];
-
-  const getStateColor = (zone) => {
-    if (!zone.preferredState || zone.preferredState.power === 'off') return 'var(--gray-500)';
-    return zone.preferredState.mode === 'heat' ? 'var(--heat)' : 'var(--cool)';
-  };
-
-  const getStateSymbol = (zone) => {
-    if (!zone.preferredState || zone.preferredState.power === 'off') return '○';
-    return zone.preferredState.mode === 'heat' ? '▲' : '▼';
-  };
-
-  const getRowOpacity = (minutesSinceUpdate) => {
-    if (minutesSinceUpdate === null) return 1;
-    // Gradually increase background gray based on staleness
-    // 0-10 min: no change, 10-60 min: slight gray, 60+ min: more gray
-    if (minutesSinceUpdate < 10) return 1;
-    if (minutesSinceUpdate < 60) return 0.7;
-    if (minutesSinceUpdate < 180) return 0.5;
-    return 0.3;
-  };
 
   // Get light status for a zone
   const getZoneLights = (zone) => {
@@ -80,117 +75,87 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
     });
   };
 
+  const handleRoomClick = (zone) => {
+    setSelectedZone(zone);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedZone(null);
+  };
+
   return (
-    <div className="tufte-dashboard">
-      <header className="dashboard-header">
-        <h1>Climate Control</h1>
-      </header>
+    <>
+      <div className="tufte-dashboard">
+        <header className="dashboard-header">
+          <h1>1819 Newton</h1>
+        </header>
 
-      <div className="zones-grid">
-        {floors.map(floor => (
-          floor.zones.length > 0 && (
-            <section key={floor.name} className="floor-group">
-              <h2 className="floor-label">{floor.name}</h2>
+        <div className="zones-grid">
+          {floors.map(floor => (
+            (floor.hvacZones.length > 0 || floor.lightOnlyZones.length > 0) && (
+              <section key={floor.name} className="floor-group">
+                <h2 className="floor-label">{floor.name}</h2>
 
-              {floor.zones.map(zone => {
-                const temp = zone.temperature !== null ? Math.round(zone.temperature) : '—';
-                const target = zone.preferredState?.target || null;
-                const delta = target && zone.temperature ? zone.temperature - target : null;
-                // Use unitName from panel which matches log data format
-                const sparklineData = zone.hasHvac ? getSparklineData(zone.unitName || zone.name, logs) : [];
-                const opacity = getRowOpacity(zone.minutesSinceUpdate);
+                {/* HVAC Zones - full width rows */}
+                {floor.hvacZones.map(zone => {
+                  const sparklineData = getSparklineData(zone.unitName || zone.name, logs);
+                  const zoneLights = getZoneLights(zone);
 
-                // Check if there's a pending change
-                const hasPendingChange = !!zone.pendingChange;
+                  return (
+                    <RoomRow
+                      key={zone.id}
+                      zone={zone}
+                      sparklineData={sparklineData}
+                      lights={zoneLights}
+                      onClick={() => handleRoomClick(zone)}
+                    />
+                  );
+                })}
 
-                // Get lights for this zone
-                const zoneLights = getZoneLights(zone);
+                {/* Light-Only Zones - grid layout */}
+                {floor.lightOnlyZones.length > 0 && (
+                  <div
+                    className="light-only-grid"
+                    data-count={floor.lightOnlyZones.length}
+                  >
+                    {floor.lightOnlyZones.map(zone => {
+                      const zoneLights = getZoneLights(zone);
 
-                if (hasPendingChange) {
-                  console.log(`${zone.name} has pending change:`, {
-                    pendingPower: zone.pendingChange.power,
-                    pendingMode: zone.pendingChange.mode,
-                    currentPower: zone.preferredState?.power,
-                    currentMode: zone.preferredState?.mode
-                  });
-                }
-
-                return (
-                  <div key={zone.id} className="zone-group">
-                    {/* Main zone row - HVAC or name only */}
-                    {zone.hasHvac ? (
-                      <div
-                        className={`zone-row ${hasPendingChange ? 'zone-row--pending' : ''}`}
-                        onClick={() => onZoneClick(zone)}
-                        role="button"
-                        tabIndex={0}
-                        style={{ opacity }}
-                      >
-                        <div className="zone-state" style={{ color: getStateColor(zone) }}>
-                          {getStateSymbol(zone)}
-                        </div>
-
-                        <div className="zone-name">{zone.name}</div>
-
-                        <div className="zone-trend">
-                          <Sparkline
-                            data={sparklineData}
-                            width={70}
-                            height={20}
-                          />
-                        </div>
-
-                        <div className="zone-temp">
-                          <span className="temp-current">{temp}°</span>
-                          {target && (
-                            <span className="temp-target">→{target}°</span>
-                          )}
-                        </div>
-
-                        {delta !== null && (
-                          <div className={`zone-delta ${delta > 0 ? 'above' : delta < 0 ? 'below' : 'at'}`}>
-                            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="zone-row zone-row--lights-only">
-                        <div className="zone-name">{zone.name}</div>
-                      </div>
-                    )}
-
-                    {/* Lights row - shown if zone has lights */}
-                    {zoneLights.length > 0 && (
-                      <div className="zone-lights-row">
-                        {zoneLights.map(light => {
-                          const isPending = !!light.pendingChange;
-                          const displayState = isPending ? light.pendingChange.state : light.state;
-                          const isOn = displayState === 'on';
-
-                          return (
-                            <button
-                              key={light.row}
-                              className={`light-button-dash ${isOn ? 'light-button-dash--on' : ''} ${isPending ? 'light-button-dash--pending' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleLight?.(light.row, light.name);
-                              }}
-                              title={`${light.name}: ${displayState}${isPending ? ' (pending)' : ''}`}
-                            >
-                              <span className="light-button-dash__icon">{isOn ? '💡' : '○'}</span>
-                              <span className="light-button-dash__name">{light.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                      return (
+                        <RoomRow
+                          key={zone.id}
+                          zone={zone}
+                          sparklineData={[]}
+                          lights={zoneLights}
+                          onClick={() => handleRoomClick(zone)}
+                        />
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </section>
-          )
-        ))}
+                )}
+              </section>
+            )
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Room Detail Modal */}
+      {selectedZone && (() => {
+        // Get the live zone data from the zones array
+        const allZones = [...zones, ...lightOnlyZones];
+        const liveZone = allZones.find(z => z.id === selectedZone.id) || selectedZone;
+
+        return (
+          <RoomModal
+            key={liveZone.id}
+            zone={liveZone}
+            lights={getZoneLights(liveZone)}
+            onClose={handleCloseModal}
+            onUpdateZone={onUpdateZone}
+            onToggleLight={onToggleLight}
+          />
+        );
+      })()}
+    </>
   );
 }

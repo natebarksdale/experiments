@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import TufteDashboard from './components/TufteDashboard';
 import TufteHistory from './components/TufteHistory';
-import ControlPanel from './components/ControlPanel';
 import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, updateControl, toggleLight, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES } from './services/sheets';
 import { initializeAuth, signIn, signOut, isAuthenticated } from './services/auth';
 import './App.css';
@@ -11,7 +10,6 @@ function App() {
   const [zones, setZones] = useState(MOCK_PANEL_DATA);
   const [logs, setLogs] = useState([]);
   const [lights, setLights] = useState([]);
-  const [selectedZone, setSelectedZone] = useState(null);
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -105,10 +103,6 @@ function App() {
     }
   }, [activeView]);
 
-  const handleZoneClick = (zone) => {
-    setSelectedZone(zone);
-  };
-
   const handleUpdateZone = async (zoneId, settings) => {
     if (!authenticated) {
       alert('Please sign in to update controls');
@@ -153,8 +147,6 @@ function App() {
       // On error, reload to get current state
       loadData();
     }
-
-    setSelectedZone(null);
   };
 
   const handleSignIn = async () => {
@@ -214,6 +206,21 @@ function App() {
 
   return (
     <div className="app-tufte">
+      <main className="app-main-tufte">
+        {activeView === 'dashboard' ? (
+          <TufteDashboard
+            zones={zones}
+            lightOnlyZones={LIGHT_ONLY_ZONES}
+            lights={lights}
+            logs={logs}
+            onUpdateZone={handleUpdateZone}
+            onToggleLight={handleToggleLight}
+          />
+        ) : (
+          <TufteHistory logs={logs} />
+        )}
+      </main>
+
       <nav className="app-nav-tufte">
         <button
           className={activeView === 'dashboard' ? 'active' : ''}
@@ -243,32 +250,6 @@ function App() {
           </button>
         </div>
       </nav>
-
-      <main className="app-main-tufte">
-        {activeView === 'dashboard' ? (
-          <TufteDashboard
-            zones={zones}
-            lightOnlyZones={LIGHT_ONLY_ZONES}
-            lights={lights}
-            logs={logs}
-            onZoneClick={handleZoneClick}
-            onToggleLight={handleToggleLight}
-          />
-        ) : (
-          <TufteHistory logs={logs} />
-        )}
-      </main>
-
-      {selectedZone && (
-        <ControlPanel
-          zone={selectedZone}
-          allZones={zones}
-          lights={lights}
-          onClose={() => setSelectedZone(null)}
-          onUpdate={handleUpdateZone}
-          onToggleLight={handleToggleLight}
-        />
-      )}
     </div>
   );
 }

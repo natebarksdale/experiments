@@ -1,0 +1,259 @@
+/* Room Row - Ambient information design with light-encoded backgrounds */
+
+.room-row {
+  position: relative;
+  padding: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-2);
+  border-radius: 2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* Light-only rooms (no HVAC) - smaller, can be in grid */
+.room-row--light-only {
+  padding: var(--s-2);
+}
+
+.room-row:hover {
+  border-color: var(--gray-300);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.room-row:active {
+  transform: scale(0.995);
+}
+
+/* Pending change indicator - subtle left border pulse */
+.room-row--pending::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--black);
+}
+
+.room-row__pending-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--black);
+}
+
+/* Main content layout */
+.room-row__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  position: relative;
+  z-index: 1;
+}
+
+/* HVAC Section */
+.room-row__hvac {
+  display: grid;
+  grid-template-columns: 20px 100px 80px auto auto;
+  gap: var(--s-2);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.room-row__state {
+  font: size 1.25rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+
+.room-row__name {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--black);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.room-row--light-only .room-row__name {
+  font-size: 1.375rem;
+}
+
+.room-row__sparkline {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+}
+
+.room-row__temp {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.temp-value {
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--black);
+}
+
+.temp-unit {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  font-weight: 400;
+}
+
+.temp-target {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  font-weight: 400;
+  margin-left: var(--s-1);
+}
+
+/* Name-only layout (for light-only zones) */
+.room-row__name-only {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.room-row__name-only .room-row__name {
+  margin: 0;
+}
+
+.room-row__name-only .room-row__lights {
+  justify-self: auto;
+  margin-left: auto;
+}
+
+/* Light status indicators */
+.room-row__lights {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+}
+
+.light-status-indicator__dots {
+  display: flex;
+  gap: 4px;
+}
+
+.light-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  transition: all 0.2s ease;
+}
+
+.light-dot--on {
+  background: #ffd700;
+  border-color: #ffed4e;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .room-row {
+    padding: var(--s-2) var(--s-3);
+  }
+
+  .room-row--light-only {
+    padding: var(--s-2);
+  }
+
+  .room-row__name {
+    font-size: 0.875rem;
+  }
+
+  .room-row--light-only .room-row__name {
+    font-size: 0.8125rem;
+  }
+
+  .temp-value {
+    font-size: 1.125rem;
+  }
+
+  .room-row__metrics {
+    gap: var(--s-2);
+  }
+
+  .light-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .light-status-indicator__count {
+    font-size: 0.625rem;
+  }
+
+  .room-row__sparkline {
+    width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .room-row {
+    padding: var(--s-2);
+  }
+
+  .room-row--light-only {
+    padding: var(--s-1) var(--s-2);
+  }
+
+  .room-row__name {
+    font-size: 0.8125rem;
+  }
+
+  .room-row--light-only .room-row__name {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .temp-value {
+    font-size: 1rem;
+  }
+
+  .temp-unit {
+    font-size: 0.75rem;
+  }
+
+  .light-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .light-status-indicator__count {
+    font-size: 0.5625rem;
+    min-width: 24px;
+  }
+}
+
+/* Improved visual hierarchy at distance */
+@media (min-width: 1200px) {
+  .room-row {
+    padding: var(--s-5) var(--s-6);
+  }
+
+  .room-row__name {
+    font-size: 1.25rem;
+  }
+
+  .temp-value {
+    font-size: 1.75rem;
+  }
+}

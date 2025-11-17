@@ -4,12 +4,12 @@
   flex-direction: column;
 }
 
-/* Navigation - minimal, precise */
+/* Navigation - minimal, precise - at bottom of page */
 .app-nav-tufte {
   display: flex;
   gap: var(--s-1);
-  padding: var(--s-4) var(--s-4) var(--s-3);
-  border-bottom: var(--border-thin);
+  padding: var(--s-2) var(--s-3);
+  border-top: var(--border-thin);
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
@@ -40,7 +40,7 @@
 .app-nav-tufte button.active::after {
   content: '';
   position: absolute;
-  bottom: -11px;
+  top: -9px;
   left: var(--s-4);
   right: var(--s-4);
   height: 2px;

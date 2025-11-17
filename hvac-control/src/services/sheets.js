@@ -14,16 +14,40 @@ const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
 // Loop 2: Basement, JRs Office, Main kitchen, Kids Bedroom
 // Light rows are from Lights sheet column D (names in D, state in B)
 export const ZONES = [
-  // Row 1: Basement
-  { id: 'basement', name: 'Basement', floor: 0, position: 'center', hasHvac: true, loop: 2 },
+  // Row 1: Apartment (Basement HVAC with lights folded in)
+  {
+    id: 'apartment',
+    name: 'Apartment',
+    floor: 0,
+    position: 'center',
+    hasHvac: true,
+    loop: 2,
+    lights: [
+      { name: 'Kitchen', row: 13 },
+      { name: 'Bathroom', row: 8 },
+      { name: 'Studio Ceiling', row: 7 },
+      { name: 'Studio Floor Lamp', row: 9 },
+      { name: 'Studio Desk Lamp', row: 10 }
+    ]
+  },
 
   // Row 2: JRs Office
-  { id: 'jrs_office', name: 'JRs Office', floor: 2, position: 'north', hasHvac: true, loop: 2 },
+  {
+    id: 'jrs_office',
+    name: 'Office',
+    floor: 2,
+    position: 'north',
+    hasHvac: true,
+    loop: 2,
+    lights: [
+      { name: 'Main Lights', row: 29 }
+    ]
+  },
 
   // Row 3: Main kitchen
   {
     id: 'main_kitchen',
-    name: 'Main kitchen',
+    name: 'Kitchen',
     floor: 1,
     position: 'north',
     hasHvac: true,
@@ -38,7 +62,7 @@ export const ZONES = [
   // Row 4: Kids Bedroom - has main lights (row 3)
   {
     id: 'kids_bedroom',
-    name: 'Kids Bedroom',
+    name: 'Bedroom',
     floor: 2,
     position: 'center',
     hasHvac: true,
@@ -51,7 +75,7 @@ export const ZONES = [
   // Row 5: Front hall
   {
     id: 'front_hall',
-    name: 'Front hall',
+    name: 'Hall',
     floor: 1,
     position: 'south',
     hasHvac: true,
@@ -63,25 +87,24 @@ export const ZONES = [
     ]
   },
 
-  // Row 6: Primary Bedroom - has Floor Lamp (row 5), ceiling (row 6), and closet (row 29)
+  // Row 6: Primary Bedroom - has Floor Lamp (row 5) and ceiling (row 6)
   {
     id: 'primary_bedroom',
-    name: 'Primary Bedroom',
+    name: 'Bedroom',
     floor: 3,
     position: 'south',
     hasHvac: true,
     loop: 1,
     lights: [
       { name: 'Floor Lamp', row: 5 },
-      { name: 'Ceiling', row: 6 },
-      { name: 'Closet', row: 29 }
+      { name: 'Ceiling', row: 6 }
     ]
   },
 
-  // Row 7: NBs Office
+  // Row 7: NB's Office (3rd floor, no "3fl" prefix)
   {
     id: 'nbs_office',
-    name: 'NBs Office',
+    name: 'Office',
     floor: 3,
     position: 'north',
     hasHvac: true,
@@ -94,7 +117,7 @@ export const ZONES = [
   // Row 8: Denn
   {
     id: 'denn',
-    name: 'Denn',
+    name: 'Den',
     floor: 2,
     position: 'south',
     hasHvac: true,
@@ -107,10 +130,10 @@ export const ZONES = [
 
 // Additional rooms without HVAC but with lights
 export const LIGHT_ONLY_ZONES = [
-  // 3rd Floor
+  // 3rd Floor (simplified, no "3F" prefix)
   {
     id: '3f_bathroom',
-    name: '3F Bathroom',
+    name: 'Bathroom',
     floor: 3,
     position: 'center',
     hasHvac: false,
@@ -120,7 +143,7 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: '3f_stairs',
-    name: '3F Stairs',
+    name: 'Stairs',
     floor: 3,
     position: 'center',
     hasHvac: false,
@@ -141,10 +164,10 @@ export const LIGHT_ONLY_ZONES = [
     ]
   },
 
-  // 1st Floor
+  // 1st Floor (simplified names)
   {
     id: 'dining_room',
-    name: 'Dining Room',
+    name: 'Dining',
     floor: 1,
     position: 'center',
     hasHvac: false,
@@ -154,7 +177,7 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'parlor',
-    name: 'Parlor/Living Room',
+    name: 'Parlor',
     floor: 1,
     position: 'center',
     hasHvac: false,
@@ -164,7 +187,7 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'kitchen_deck',
-    name: 'Kitchen Deck',
+    name: 'Deck',
     floor: 1,
     position: 'rear',
     hasHvac: false,
@@ -183,32 +206,10 @@ export const LIGHT_ONLY_ZONES = [
     ]
   },
 
-  // Basement
-  {
-    id: 'basement_studio',
-    name: 'Basement Studio',
-    floor: 0,
-    position: 'center',
-    hasHvac: false,
-    lights: [
-      { name: 'Studio Ceiling', row: 7 },
-      { name: 'Studio Floor Lamp', row: 9 },
-      { name: 'Studio Desk Lamp', row: 10 }
-    ]
-  },
-  {
-    id: 'basement_kitchen',
-    name: 'Basement Kitchen',
-    floor: 0,
-    position: 'center',
-    hasHvac: false,
-    lights: [
-      { name: 'Kitchen', row: 13 }
-    ]
-  },
+  // Basement (remaining rooms not in Apartment, simplified names)
   {
     id: 'basement_utility',
-    name: 'Basement Utility',
+    name: 'Utility',
     floor: 0,
     position: 'center',
     hasHvac: false,
@@ -217,18 +218,8 @@ export const LIGHT_ONLY_ZONES = [
     ]
   },
   {
-    id: 'basement_bathroom',
-    name: 'Basement Bathroom',
-    floor: 0,
-    position: 'center',
-    hasHvac: false,
-    lights: [
-      { name: 'Bathroom', row: 8 }
-    ]
-  },
-  {
     id: 'basement_stairs',
-    name: 'Basement Stairs',
+    name: 'Stairs',
     floor: 0,
     position: 'center',
     hasHvac: false,
@@ -238,7 +229,7 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'basement_porch',
-    name: 'Basement Porch',
+    name: 'Porch',
     floor: 0,
     position: 'rear',
     hasHvac: false,
@@ -248,7 +239,7 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'basement_garage',
-    name: 'Basement Garage',
+    name: 'Garage',
     floor: 0,
     position: 'center',
     hasHvac: false,
@@ -259,7 +250,7 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'exterior_backyard',
-    name: 'Exterior/Backyard',
+    name: 'Backyard',
     floor: 0,
     position: 'exterior',
     hasHvac: false,
@@ -542,27 +533,28 @@ export async function fetchLogHistory(daysBack = 7) {
 
 /**
  * Fetch light status from Lights sheet
- * Column B has state (On/Off), Column D has names
+ * Column D has state (On/Off) and names
  */
 export async function fetchLightStatus() {
   try {
-    const [states, names] = await Promise.all([
-      fetchRange('Lights!B2:B20'), // State column
-      fetchRange('Lights!D2:D20'), // Name column
-    ]);
+    const states = await fetchRange('Lights!D2:D39'); // State column D contains the state
 
     const lights = [];
-    for (let i = 0; i < names.length; i++) {
-      if (names[i]?.[0]) {
+    for (let i = 0; i < states.length; i++) {
+      const cellValue = states[i]?.[0];
+      if (cellValue) {
+        // Check if cell value is "on" or "off" (case insensitive)
+        const state = cellValue.toLowerCase() === 'on' ? 'on' : 'off';
         lights.push({
           index: i,
-          name: names[i][0],
-          state: states[i]?.[0]?.toLowerCase() === 'on' ? 'on' : 'off',
+          name: `Light ${i + 2}`, // Generic name based on row
+          state: state,
           row: i + 2, // Sheet row number (accounting for header)
         });
       }
     }
 
+    console.log('Fetched light states:', lights);
     return lights;
   } catch (error) {
     console.error('Error fetching light status:', error);
@@ -603,7 +595,7 @@ const LIGHT_WEBHOOKS = {
   26: { on: '1fl_kitchen_on', off: '1fl_kitchen_off' },                // Kitchen Main Lights
   27: { on: '1fl_cabinet_on', off: '1fl_cabinet_off' },                // Kitchen Under Cabinet
   28: { on: '1fl_parlor_on', off: '1fl_parlor_off' },                  // Living Room Main Lights
-  29: { on: '3fl_closet_on', off: '3fl_closet_off' },                  // Master Bedroom Closet Light
+  29: { on: '2fl_office_on', off: '2fl_office_off' },                  // JRs Office Main Lights
   30: { on: '3fl_office_on', off: '3fl_office_off' },                  // Office Main Lights
   31: { on: '3fl_stairs_on', off: '3fl_stairs_off' },                  // Stairs Main Lights
 };

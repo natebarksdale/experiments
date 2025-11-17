@@ -1,7 +1,7 @@
 .tufte-dashboard {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: var(--s-3) var(--s-4) var(--s-2);
+  padding: var(--s-3) var(--s-4) var(--s-4);
 }
 
 /* Header */
@@ -15,207 +15,77 @@
 }
 
 .dashboard-header h1 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--black);
 }
 
 /* Floor sections */
 .floor-group {
-  margin-bottom: var(--s-3);
+  margin-bottom: var(--s-4);
 }
 
 .floor-label {
-  font-size: 0.625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--gray-500);
-  margin-bottom: var(--s-1);
-  border-bottom: var(--border-thin);
-  padding-bottom: var(--s-1);
-}
-
-/* Zone group - contains main row and optional lights row */
-.zone-group {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Zone rows - small multiples */
-.zone-row {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) 70px 70px 28px;
-  gap: var(--s-1);
-  align-items: center;
-  padding: var(--s-1) var(--s-2);
-  border-bottom: var(--border-thin);
-  cursor: pointer;
-  font-size: 0.75rem;
-}
-
-/* Light-only zones (no HVAC) */
-.zone-row--lights-only {
-  grid-template-columns: minmax(0, 1fr);
-  cursor: default;
-}
-
-.zone-row:hover {
-  background: var(--gray-50);
-}
-
-.zone-row:active {
-  background: var(--gray-100);
-}
-
-/* Pending change indicator */
-.zone-row--pending {
-  background: var(--gray-50);
-  position: relative;
-}
-
-.zone-row--pending::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--black);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-
-/* Zone state indicator */
-.zone-state {
-  font-size: 1rem;
-  text-align: center;
-  font-weight: 500;
-}
-
-/* Zone name */
-.zone-name {
-  font-weight: 400;
-  color: var(--black);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Temperature */
-.zone-temp {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-1);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.temp-current {
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
-
-.temp-target {
-  font-size: 0.5625rem;
-  color: var(--gray-500);
-}
-
-/* Delta */
-.zone-delta {
-  font-size: 0.5625rem;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.zone-delta.above {
-  color: var(--heat);
-}
-
-.zone-delta.below {
-  color: var(--cool);
-}
-
-.zone-delta.at {
-  color: var(--gray-300);
-}
-
-/* Lights row - buttons for direct control */
-.zone-lights-row {
-  display: flex;
-  gap: var(--s-2);
-  padding: var(--s-1) var(--s-2);
-  padding-top: 0;
-  border-bottom: var(--border-thin);
-}
-
-.light-button-dash {
-  display: flex;
-  align-items: center;
-  gap: var(--s-1);
-  padding: var(--s-1) var(--s-2);
-  background: var(--gray-50);
-  border: 1px solid var(--gray-300);
-  border-radius: 4px;
-  cursor: pointer;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  transition: all 0.2s ease;
-  position: relative;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gray-500);
+  margin-bottom: var(--s-2);
+  padding-bottom: var(--s-1);
+  border-bottom: var(--border-thin);
 }
 
-.light-button-dash:hover {
-  background: var(--white);
-  border-color: var(--gray-500);
+/* Legacy styles removed - now using RoomRow component */
+
+/* Light-only zones grid - responsive columns */
+.light-only-grid {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-.light-button-dash--on {
-  background: var(--white);
-  border-color: var(--black);
+/* Use data-count attribute for specific layouts */
+
+/* Exactly 1 item - full width */
+.light-only-grid[data-count="1"] {
+  grid-template-columns: 1fr;
 }
 
-.light-button-dash--pending {
-  position: relative;
+/* Exactly 2 items - 2 columns */
+.light-only-grid[data-count="2"] {
+  grid-template-columns: repeat(2, 1fr);
 }
 
-.light-button-dash--pending::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--black);
-  animation: pulse 2s ease-in-out infinite;
+/* 3 or more items - 3 columns */
+.light-only-grid[data-count="3"],
+.light-only-grid[data-count="4"],
+.light-only-grid[data-count="5"],
+.light-only-grid[data-count="6"],
+.light-only-grid[data-count="7"],
+.light-only-grid[data-count="8"],
+.light-only-grid[data-count="9"],
+.light-only-grid[data-count="10"] {
+  grid-template-columns: repeat(3, 1fr);
 }
 
-.light-button-dash__icon {
-  font-size: 1rem;
-  line-height: 1;
+/* If 4 items (3 + 1), make last item span full width */
+.light-only-grid[data-count="4"] > :nth-child(4) {
+  grid-column: 1 / -1;
 }
 
-.light-button-dash__name {
-  font-weight: 500;
-  color: var(--black);
-  text-transform: none;
-  letter-spacing: 0;
+/* If 7 items (6 + 1), make last item span full width */
+.light-only-grid[data-count="7"] > :nth-child(7) {
+  grid-column: 1 / -1;
 }
 
-/* Trend sparkline */
-.zone-trend {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  overflow: visible;
-  min-height: 20px;
+/* If 10 items (9 + 1), make last item span full width */
+.light-only-grid[data-count="10"] > :nth-child(10) {
+  grid-column: 1 / -1;
 }
 
 /* Footer */
@@ -234,6 +104,30 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
   .tufte-dashboard {
-    padding: var(--s-3) var(--s-3) var(--s-2);
+    padding: var(--s-2) var(--s-3) var(--s-2);
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Mobile keeps 3 columns, just tighter spacing */
+  .light-only-grid {
+    gap: var(--s-1);
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even on small screens, keep 3 columns */
+  .tufte-dashboard {
+    padding: var(--s-2) var(--s-2) var(--s-2);
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .light-only-grid {
+    gap: var(--s-1);
   }
 }
