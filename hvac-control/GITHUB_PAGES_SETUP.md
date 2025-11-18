@@ -17,6 +17,8 @@ This project is now configured to automatically build and deploy to GitHub Pages
    - **Source**: Select "GitHub Actions"
    - (Not "Deploy from a branch")
 
+**Note:** The workflow file is located at the repository root: `.github/workflows/deploy.yml` (not in the hvac-control subdirectory). It builds the HVAC Control app and deploys it alongside other experiments.
+
 ### 2. Add GitHub Secrets
 
 Go to **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
