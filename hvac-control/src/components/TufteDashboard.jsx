@@ -86,10 +86,6 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
   return (
     <>
       <div className="tufte-dashboard">
-        <header className="dashboard-header">
-          <h1>1819 Newton</h1>
-        </header>
-
         <div className="zones-grid">
           {floors.map(floor => (
             (floor.hvacZones.length > 0 || floor.lightOnlyZones.length > 0) && (

@@ -21,9 +21,8 @@
   --cool: #5b9dd9;
   --cool-light: #7db3e6;
 
-  /* Typography - optimized for dark mode legibility */
-  --font-serif: 'Literata', Georgia, serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography - technical precision aesthetic */
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 
   /* Spacing scale */
@@ -62,10 +61,10 @@ body {
 
 /* Typography */
 h1, h2, h3, h4 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* Remove default transitions for snappier feel */

@@ -12,7 +12,7 @@ cat > index.html << 'EOF'
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Literata:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <title>Home Climate Control</title>
   </head>
   <body>
@@ -39,12 +39,12 @@ cp dist/index.html .
 cp -r dist/assets .
 
 echo "✓ Copied built files to root"
-
-# Step 4: Commit and push
-git add index.html assets/
-git commit -m "Deploy HVAC control app - $(date '+%Y-%m-%d %H:%M')"
-git push origin main
-
-echo "✓ Deployed to GitHub"
 echo ""
-echo "App should be live at: https://natebarksdale.xyz/experiments/hvac-control/"
+echo "IMPORTANT: Built files contain environment variables and should NOT be committed to git."
+echo "The assets/ folder is now in .gitignore to prevent accidental exposure."
+echo ""
+echo "To deploy, upload the following files to your web server:"
+echo "  - index.html"
+echo "  - assets/ (entire directory)"
+echo ""
+echo "Or use a deployment service like Netlify, Vercel, or GitHub Pages that builds from source."

@@ -12,9 +12,9 @@ dist
 dist-ssr
 *.local
 
-# But don't ignore deployed build at root
-!/assets
-!/build.html
+# Build outputs (contain embedded secrets)
+assets/*.js
+assets/*.css
 
 # Environment variables
 .env

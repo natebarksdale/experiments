@@ -2,8 +2,8 @@
 
 .room-row {
   position: relative;
-  padding: var(--s-2) var(--s-3);
-  margin-bottom: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  margin-bottom: var(--s-1);
   border-radius: 2px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -13,7 +13,7 @@
 
 /* Light-only rooms (no HVAC) - smaller, can be in grid */
 .room-row--light-only {
-  padding: var(--s-2);
+  padding: var(--s-1);
 }
 
 .room-row:hover {
@@ -73,10 +73,10 @@
 }
 
 .room-row__name {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: 1.125rem;
   font-weight: 600;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   color: var(--black);
   margin: 0;
   line-height: 1.3;

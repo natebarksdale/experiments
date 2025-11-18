@@ -563,7 +563,7 @@ export async function fetchLightStatus() {
 }
 
 // IFTTT webhook configuration
-const IFTTT_KEY = 'czrIULp6_2rKCrSTv8L4Rz';
+const IFTTT_KEY = import.meta.env.VITE_IFTTT_WEBHOOK_KEY || '';
 
 // Mapping of Lights sheet rows to webhook event names
 // Based on the order in your Lights sheet
