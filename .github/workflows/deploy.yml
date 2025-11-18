@@ -74,8 +74,19 @@ jobs:
           echo "✅ Static files copied to _deploy/"
           ls -la _deploy/
 
+      - name: Check if HVAC secrets are configured
+        id: check-hvac-secrets
+        run: |
+          if [ -n "${{ secrets.VITE_GOOGLE_SHEETS_API_KEY }}" ]; then
+            echo "hvac_enabled=true" >> $GITHUB_OUTPUT
+            echo "✅ HVAC secrets found - will build HVAC Control app"
+          else
+            echo "hvac_enabled=false" >> $GITHUB_OUTPUT
+            echo "⏭️  HVAC secrets not set - skipping HVAC Control build"
+          fi
+
       - name: Setup Node.js for HVAC Control
-        if: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY != '' }}
+        if: steps.check-hvac-secrets.outputs.hvac_enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -83,13 +94,13 @@ jobs:
           cache-dependency-path: hvac-control/package-lock.json
 
       - name: Install dependencies for HVAC Control
-        if: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY != '' }}
+        if: steps.check-hvac-secrets.outputs.hvac_enabled == 'true'
         run: |
           cd hvac-control
           npm ci
 
       - name: Build HVAC Control app
-        if: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY != '' }}
+        if: steps.check-hvac-secrets.outputs.hvac_enabled == 'true'
         run: |
           cd hvac-control
           npm run build
@@ -99,11 +110,12 @@ jobs:
           VITE_IFTTT_WEBHOOK_KEY: ${{ secrets.VITE_IFTTT_WEBHOOK_KEY }}
 
       - name: Copy HVAC Control build to deployment directory
-        if: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY != '' }}
+        if: steps.check-hvac-secrets.outputs.hvac_enabled == 'true'
         run: |
           # Copy built HVAC app to hvac-control subdirectory for deployment
           mkdir -p _deploy/hvac-control
           cp -r hvac-control/dist/* _deploy/hvac-control/
+          echo "✅ HVAC Control app deployed to _deploy/hvac-control/"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
