@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject API Key
+      - name: Inject API Key (for travel-guide.js)
         run: |
           # Obfuscate the API key (reverse + base64) to prevent casual scraping
           # Note: This is NOT real security - the key is site-locked on OpenRouter
@@ -56,13 +56,50 @@ jobs:
 
           echo "✅ API key obfuscated and injected successfully"
 
+      - name: Setup Node.js for HVAC Control
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: hvac-control/package-lock.json
+
+      - name: Install dependencies for HVAC Control
+        run: |
+          cd hvac-control
+          npm ci
+
+      - name: Build HVAC Control app
+        run: |
+          cd hvac-control
+          npm run build
+        env:
+          VITE_GOOGLE_SHEETS_API_KEY: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_IFTTT_WEBHOOK_KEY: ${{ secrets.VITE_IFTTT_WEBHOOK_KEY }}
+
+      - name: Copy HVAC Control build to deployment directory
+        run: |
+          # Copy built HVAC app to hvac-control subdirectory for deployment
+          mkdir -p _deploy/hvac-control
+          cp -r hvac-control/dist/* _deploy/hvac-control/
+
+          # Copy other static files (travel guide, etc.) to deployment root
+          cp travel-guide.html _deploy/ || true
+          cp travel-guide.js _deploy/ || true
+          cp style.css _deploy/ || true
+          cp index.html _deploy/ || true
+
+          # Copy any other static assets
+          cp -r images _deploy/ 2>/dev/null || true
+          cp -r assets _deploy/ 2>/dev/null || true
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_deploy'
 
       - name: Deploy to GitHub Pages
         id: deployment
