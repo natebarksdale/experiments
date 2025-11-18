@@ -53,16 +53,23 @@ npm install
    - No need to add redirect URIs (using token client)
 5. Copy the **Client ID** (looks like `xxxxx.apps.googleusercontent.com`)
 
-#### D. Configure Environment Variables
+#### D. Get IFTTT Webhook Key (for light control)
+
+1. Go to [IFTTT Maker Webhooks](https://ifttt.com/maker_webhooks/settings)
+2. Copy your webhook key from the URL (the part after `/use/`)
+3. Create IFTTT applets for each light (see light configuration below)
+
+#### E. Configure Environment Variables
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add both credentials:
+Edit `.env` and add all three credentials:
 ```
 VITE_GOOGLE_SHEETS_API_KEY=your_api_key_here
 VITE_GOOGLE_CLIENT_ID=your_oauth_client_id.apps.googleusercontent.com
+VITE_IFTTT_WEBHOOK_KEY=your_ifttt_key_here
 ```
 
 ### 3. Configure Google Sheet Permissions
@@ -96,13 +103,44 @@ The app will be available at `http://localhost:5173`
    - Make changes to power/mode and click "Apply Changes"
    - Changes will be written to your Google Sheet's Control tab
 
-## Building for Production
+## Deployment
+
+This project uses **GitHub Actions** to automatically build and deploy to GitHub Pages.
+
+### Setup (One-Time)
+
+See [GITHUB_PAGES_SETUP.md](./GITHUB_PAGES_SETUP.md) for detailed setup instructions.
+
+Quick summary:
+1. Enable GitHub Pages in repository settings (Source: "GitHub Actions")
+2. Add three secrets to GitHub repository settings:
+   - `VITE_GOOGLE_SHEETS_API_KEY`
+   - `VITE_GOOGLE_CLIENT_ID`
+   - `VITE_IFTTT_WEBHOOK_KEY`
+3. Push to main branch
+
+### Deploying Updates
+
+Simply push to main - GitHub Actions handles the rest:
+
+```bash
+git add .
+git commit -m "Your changes"
+git push origin main
+```
+
+Your site will automatically deploy to: `https://natebarksdale.xyz/experiments/hvac-control/`
+
+### Local Build (Optional)
+
+To test the production build locally:
 
 ```bash
 npm run build
+npm run preview
 ```
 
-The production build will be in the `dist/` folder.
+**Note:** Built files contain embedded environment variables from `.env` and should never be committed to git.
 
 ## Google Sheets Structure
 

@@ -1,50 +1,31 @@
 #!/bin/bash
 
-# Deployment script for HVAC control app
+# ⚠️  DEPRECATED: This deployment script is no longer used
+#
+# We now use GitHub Actions for automatic deployment to GitHub Pages.
+# This keeps secrets secure and automates the entire process.
+#
+# See GITHUB_PAGES_SETUP.md for setup instructions.
+#
+# To deploy: Just push to main branch
+#   git push origin main
+#
+# GitHub Actions will automatically:
+#   1. Build the app with secrets from GitHub Secrets
+#   2. Deploy to GitHub Pages
+#   3. Update your live site
+#
+# No manual deployment needed!
 
-# Step 1: Restore source index.html if it was overwritten
-cat > index.html << 'EOF'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>Home Climate Control</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-EOF
-
-echo "✓ Restored source index.html"
-
-# Step 2: Build the app
-npm run build
-
-if [ $? -ne 0 ]; then
-  echo "✗ Build failed"
-  exit 1
-fi
-
-echo "✓ Build successful"
-
-# Step 3: Copy built files to root
-cp dist/index.html .
-cp -r dist/assets .
-
-echo "✓ Copied built files to root"
 echo ""
-echo "IMPORTANT: Built files contain environment variables and should NOT be committed to git."
-echo "The assets/ folder is now in .gitignore to prevent accidental exposure."
+echo "⚠️  This script is deprecated!"
 echo ""
-echo "To deploy, upload the following files to your web server:"
-echo "  - index.html"
-echo "  - assets/ (entire directory)"
+echo "We now use GitHub Actions for deployment."
+echo "See GITHUB_PAGES_SETUP.md for setup instructions."
 echo ""
-echo "Or use a deployment service like Netlify, Vercel, or GitHub Pages that builds from source."
+echo "To deploy, simply push to main:"
+echo "  git push origin main"
+echo ""
+echo "Your changes will automatically deploy to:"
+echo "  https://natebarksdale.xyz/experiments/hvac-control/"
+echo ""
