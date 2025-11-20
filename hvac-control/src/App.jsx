@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import TufteDashboard from './components/TufteDashboard';
 import TufteHistory from './components/TufteHistory';
-import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, updateControl, toggleLight, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES } from './services/sheets';
+import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, fetchLockStatus, fetchPlugStatus, updateControl, toggleLight, toggleLock, triggerHvacWebhook, togglePlug, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES, ZONES } from './services/sheets';
 import { initializeAuth, signIn, signOut, isAuthenticated } from './services/auth';
 import './App.css';
 
@@ -10,6 +10,8 @@ function App() {
   const [zones, setZones] = useState(MOCK_PANEL_DATA);
   const [logs, setLogs] = useState([]);
   const [lights, setLights] = useState([]);
+  const [plugs, setPlugs] = useState([]);
+  const [locks, setLocks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -28,10 +30,12 @@ function App() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [panelData, historyData, lightData] = await Promise.all([
+      const [panelData, historyData, lightData, plugData, lockData] = await Promise.all([
         fetchPanelStatus(),
         fetchLogHistory(),
-        fetchLightStatus()
+        fetchLightStatus(),
+        fetchPlugStatus(),
+        fetchLockStatus()
       ]);
 
       if (panelData && panelData.length > 0) {
@@ -56,8 +60,13 @@ function App() {
             });
 
             if (!changeApplied) {
-              // Preserve pending change if not yet applied
-              return { ...newZone, pendingChange: existingZone.pendingChange };
+              // Preserve pending change and our updated preferredState if not yet applied
+              return {
+                ...newZone,
+                preferredState: existingZone.preferredState, // Keep our updated state
+                pendingChange: existingZone.pendingChange,
+                // Keep defaultState from fresh data
+              };
             }
           }
 
@@ -90,6 +99,46 @@ function App() {
 
         setLights(updatedLights);
       }
+
+      if (plugData) {
+        // Merge with existing plugs to preserve pendingChange flags
+        const updatedPlugs = plugData.map(newPlug => {
+          const existingPlug = plugs.find(p => p.id === newPlug.id);
+
+          // Check if pending change has been applied
+          if (existingPlug?.pendingChange) {
+            const changeApplied = existingPlug.pendingChange.state === newPlug.state;
+
+            if (!changeApplied) {
+              return { ...newPlug, pendingChange: existingPlug.pendingChange };
+            }
+          }
+
+          return newPlug;
+        });
+
+        setPlugs(updatedPlugs);
+      }
+
+      if (lockData) {
+        // Merge with existing locks to preserve pendingChange flags
+        const updatedLocks = lockData.map(newLock => {
+          const existingLock = locks.find(l => l.id === newLock.id);
+
+          // Check if pending change has been applied
+          if (existingLock?.pendingChange) {
+            const changeApplied = existingLock.pendingChange.state === newLock.state;
+
+            if (!changeApplied) {
+              return { ...newLock, pendingChange: existingLock.pendingChange };
+            }
+          }
+
+          return newLock;
+        });
+
+        setLocks(updatedLocks);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -106,46 +155,130 @@ function App() {
   const handleUpdateZone = async (zoneId, settings) => {
     if (!authenticated) {
       alert('Please sign in to update controls');
-      return;
+      throw new Error('Not authenticated');
     }
 
     const zoneIndex = zones.findIndex(z => z.id === zoneId);
-    if (zoneIndex === -1) return;
+    if (zoneIndex === -1) {
+      throw new Error('Zone not found');
+    }
 
     const updatedZones = [...zones];
     const pendingChange = {
       power: settings.power ?? updatedZones[zoneIndex].preferredState?.power ?? 'off',
       mode: settings.mode ?? updatedZones[zoneIndex].preferredState?.mode ?? 'heat',
+      target: settings.target ?? updatedZones[zoneIndex].preferredState?.target ?? 68,
       requestedAt: new Date(),
     };
 
-    // Don't update preferredState yet - just add the pendingChange flag
-    // The actual state will update when we get fresh data from the sheet
+    // Update both pendingChange and preferredState
+    // preferredState shows the expected state immediately in the UI
+    // pendingChange tracks that we're waiting for confirmation
     updatedZones[zoneIndex] = {
       ...updatedZones[zoneIndex],
+      preferredState: {
+        ...updatedZones[zoneIndex].preferredState,
+        power: pendingChange.power,
+        mode: pendingChange.mode,
+        target: pendingChange.target,
+      },
       pendingChange,
     };
 
     console.log('Setting pending change for', updatedZones[zoneIndex].name, pendingChange);
     setZones(updatedZones);
 
+    // Track status for the modal
+    const result = {
+      sheetUpdated: false,
+      webhookTriggered: false,
+    };
+
     try {
+      // Handle conflicting zones first - turn them off and switch their mode
+      if (settings.conflictingZones && settings.conflictingZones.length > 0) {
+        for (const conflictZoneId of settings.conflictingZones) {
+          const conflictIndex = zones.findIndex(z => z.id === conflictZoneId);
+          if (conflictIndex !== -1) {
+            const conflictTarget = updatedZones[conflictIndex].preferredState?.target || 68;
+            console.log(`Resolving conflict: turning off ${conflictZoneId} and switching mode to ${settings.mode}`);
+
+            // Update Google Sheet
+            await updateControl(conflictIndex, 'power', 'off');
+            await updateControl(conflictIndex, 'mode', settings.mode);
+            await updateControl(conflictIndex, 'action', 'toggle');
+
+            // Trigger webhook for the conflicting zone
+            const conflictWebhookResult = await triggerHvacWebhook(
+              conflictZoneId,
+              'off',
+              settings.mode,
+              conflictTarget
+            );
+
+            if (conflictWebhookResult.success) {
+              console.log(`Webhook sent to turn off ${conflictZoneId}`);
+            }
+
+            // Update local state for conflicting zone
+            updatedZones[conflictIndex] = {
+              ...updatedZones[conflictIndex],
+              preferredState: {
+                ...updatedZones[conflictIndex].preferredState,
+                power: 'off',
+                mode: settings.mode,
+              },
+              pendingChange: {
+                power: 'off',
+                mode: settings.mode,
+                target: conflictTarget,
+                requestedAt: new Date(),
+              },
+            };
+          }
+        }
+      }
+
+      // Update Google Sheet (for state tracking)
       if (settings.power !== undefined) {
         await updateControl(zoneIndex, 'power', settings.power);
       }
       if (settings.mode !== undefined) {
         await updateControl(zoneIndex, 'mode', settings.mode);
       }
+      if (settings.target !== undefined) {
+        await updateControl(zoneIndex, 'target', settings.target);
+      }
       await updateControl(zoneIndex, 'action', 'toggle');
+      result.sheetUpdated = true;
+
+      // Also trigger direct HVAC webhook for faster response (if configured for this zone)
+      const target = settings.target ?? updatedZones[zoneIndex].preferredState?.target ?? 68;
+      const webhookResult = await triggerHvacWebhook(
+        zoneId,
+        pendingChange.power,
+        pendingChange.mode,
+        target
+      );
+
+      if (webhookResult.success) {
+        console.log('Direct HVAC webhook sent for faster response');
+        result.webhookTriggered = true;
+      }
+
+      // Update zones state with all changes (including conflicts)
+      setZones(updatedZones);
 
       // Don't reload immediately - the change takes time to propagate through IFTTT
       // The pending indicator will show until the next regular refresh detects the change
       console.log('Control update sent. Waiting for IFTTT to apply change (check every 2min)...');
+
+      return result;
     } catch (error) {
       console.error('Error updating zone:', error);
-      alert(`Failed to update: ${error.message}`);
       // On error, reload to get current state
       loadData();
+      throw error;
     }
   };
 
@@ -162,6 +295,66 @@ function App() {
   const handleSignOut = () => {
     signOut();
     setAuthenticated(false);
+  };
+
+  const handleRestoreDefault = async (zoneId) => {
+    if (!authenticated) {
+      alert('Please sign in to update controls');
+      throw new Error('Not authenticated');
+    }
+
+    const zoneIndex = zones.findIndex(z => z.id === zoneId);
+    if (zoneIndex === -1) {
+      throw new Error('Zone not found');
+    }
+
+    const zone = zones[zoneIndex];
+    const defaultState = zone.defaultState;
+
+    if (!defaultState) {
+      throw new Error('No default state available');
+    }
+
+    // Update local state to default
+    const updatedZones = [...zones];
+    updatedZones[zoneIndex] = {
+      ...updatedZones[zoneIndex],
+      preferredState: {
+        ...updatedZones[zoneIndex].preferredState,
+        power: defaultState.power,
+        mode: defaultState.mode,
+        target: defaultState.target,
+      },
+      hasOverride: false,
+      pendingChange: {
+        power: defaultState.power,
+        mode: defaultState.mode,
+        target: defaultState.target,
+        requestedAt: new Date(),
+      },
+    };
+
+    setZones(updatedZones);
+
+    try {
+      // Clear the override flag in the sheet
+      await updateControl(zoneIndex, 'clearOverride', false);
+
+      // Restore the Control sheet values from Panel defaults
+      await updateControl(zoneIndex, 'power', defaultState.power);
+      await updateControl(zoneIndex, 'mode', defaultState.mode);
+      if (defaultState.target) {
+        await updateControl(zoneIndex, 'target', defaultState.target);
+      }
+
+      console.log('Cleared override for', zone.name, '- restored to default:', defaultState);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error restoring default:', error);
+      loadData();
+      throw error;
+    }
   };
 
   const handleToggleLight = async (lightRow, lightName) => {
@@ -204,6 +397,86 @@ function App() {
     }
   };
 
+  const handleTogglePlug = async (plugId, plugName) => {
+    if (!authenticated) {
+      alert('Please sign in to control plugs');
+      return;
+    }
+
+    const plugIndex = plugs.findIndex(p => p.id === plugId);
+    if (plugIndex === -1) {
+      console.error('Plug not found:', plugId);
+      return;
+    }
+
+    const currentPlug = plugs[plugIndex];
+    const displayedState = currentPlug.pendingChange?.state ?? currentPlug.state;
+    const newState = displayedState === 'on' ? 'off' : 'on';
+
+    // Set pending change
+    const updatedPlugs = [...plugs];
+    updatedPlugs[plugIndex] = {
+      ...currentPlug,
+      pendingChange: {
+        state: newState,
+        requestedAt: new Date(),
+      },
+    };
+
+    console.log(`Setting pending plug change for ${plugName}: ${displayedState} -> ${newState}`);
+    setPlugs(updatedPlugs);
+
+    try {
+      await togglePlug(plugId, displayedState);
+      console.log(`Plug toggle webhook sent for ${plugName}. Waiting for confirmation...`);
+    } catch (error) {
+      console.error('Error toggling plug:', error);
+      alert(`Failed to toggle plug: ${error.message}`);
+      // On error, reload to get current state
+      loadData();
+    }
+  };
+
+  const handleToggleLock = async (lockId, lockName) => {
+    if (!authenticated) {
+      alert('Please sign in to control locks');
+      return;
+    }
+
+    const lockIndex = locks.findIndex(l => l.id === lockId);
+    if (lockIndex === -1) {
+      console.error('Lock not found:', lockId);
+      return;
+    }
+
+    const currentLock = locks[lockIndex];
+    const displayedState = currentLock.pendingChange?.state ?? currentLock.state;
+    const newState = displayedState === 'locked' ? 'unlocked' : 'locked';
+
+    // Set pending change
+    const updatedLocks = [...locks];
+    updatedLocks[lockIndex] = {
+      ...currentLock,
+      pendingChange: {
+        state: newState,
+        requestedAt: new Date(),
+      },
+    };
+
+    console.log(`Setting pending lock change for ${lockName}: ${displayedState} -> ${newState}`);
+    setLocks(updatedLocks);
+
+    try {
+      await toggleLock(lockId, displayedState);
+      console.log(`Lock toggle webhook sent for ${lockName}. Waiting for confirmation...`);
+    } catch (error) {
+      console.error('Error toggling lock:', error);
+      alert(`Failed to toggle lock: ${error.message}`);
+      // On error, reload to get current state
+      loadData();
+    }
+  };
+
   return (
     <div className="app-tufte">
       <main className="app-main-tufte">
@@ -212,9 +485,14 @@ function App() {
             zones={zones}
             lightOnlyZones={LIGHT_ONLY_ZONES}
             lights={lights}
+            plugs={plugs}
+            locks={locks}
             logs={logs}
             onUpdateZone={handleUpdateZone}
+            onRestoreDefault={handleRestoreDefault}
             onToggleLight={handleToggleLight}
+            onTogglePlug={handleTogglePlug}
+            onToggleLock={handleToggleLock}
           />
         ) : (
           <TufteHistory logs={logs} />

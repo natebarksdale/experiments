@@ -6,8 +6,8 @@ import './RoomRow.css';
  * RoomRow - A single room's status display
  * Uses radial gradients to encode light status information
  */
-export default function RoomRow({ zone, sparklineData, lights, onClick }) {
-  const { name, temperature, minutesSinceUpdate, preferredState, hasHvac } = zone;
+export default function RoomRow({ zone, sparklineData, lights, plugs = [], locks = [], onClick }) {
+  const { name, temperature, minutesSinceUpdate, preferredState, hasHvac, hasOverride } = zone;
   const { power, mode, target } = preferredState || {};
 
   const temp = temperature !== null ? Math.round(temperature) : '—';
@@ -20,6 +20,12 @@ export default function RoomRow({ zone, sparklineData, lights, onClick }) {
     const displayState = l.pendingChange?.state ?? l.state;
     return displayState === 'on';
   }).length;
+
+  // Calculate plug status (doesn't affect gradient)
+  const totalPlugs = plugs.length;
+
+  // Calculate lock count
+  const totalLocks = locks.length;
 
   // Generate radial gradient based on light status (dark mode)
   const getLightGradient = () => {
@@ -94,7 +100,7 @@ export default function RoomRow({ zone, sparklineData, lights, onClick }) {
               {getStateSymbol()}
             </div>
 
-            <h3 className="room-row__name">{name}</h3>
+            <h3 className={`room-row__name ${hasOverride ? 'room-row__name--override' : ''}`}>{name}</h3>
 
             <div className="room-row__sparkline">
               <Sparkline data={sparklineData} width={80} height={24} />
@@ -107,8 +113,8 @@ export default function RoomRow({ zone, sparklineData, lights, onClick }) {
               )}
             </div>
 
-            {/* Light status indicators - part of grid */}
-            {totalLights > 0 && (
+            {/* Light, plug, and lock status indicators - part of grid */}
+            {(totalLights > 0 || totalPlugs > 0 || totalLocks > 0) && (
               <div className="room-row__lights">
                 <div className="light-status-indicator__dots">
                   {lights.map((light, idx) => {
@@ -116,11 +122,37 @@ export default function RoomRow({ zone, sparklineData, lights, onClick }) {
                     const isOn = displayState === 'on';
                     return (
                       <motion.div
-                        key={idx}
+                        key={`light-${idx}`}
                         className={`light-dot ${isOn ? 'light-dot--on' : ''}`}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: idx * 0.05 }}
+                      />
+                    );
+                  })}
+                  {plugs.map((plug, idx) => {
+                    const displayState = plug.pendingChange?.state ?? plug.state;
+                    const isOn = displayState === 'on';
+                    return (
+                      <motion.div
+                        key={`plug-${idx}`}
+                        className={`plug-dot ${isOn ? 'plug-dot--on' : ''}`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: (lights.length + idx) * 0.05 }}
+                      />
+                    );
+                  })}
+                  {locks.map((lock, idx) => {
+                    const displayState = lock.pendingChange?.state ?? lock.state;
+                    const isUnlocked = displayState === 'unlocked';
+                    return (
+                      <motion.div
+                        key={`lock-${idx}`}
+                        className={`lock-dot ${isUnlocked ? 'lock-dot--unlocked' : ''}`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: (lights.length + plugs.length + idx) * 0.05 }}
                       />
                     );
                   })}
@@ -133,10 +165,10 @@ export default function RoomRow({ zone, sparklineData, lights, onClick }) {
         {/* Name-only for light-only zones */}
         {!hasHvac && (
           <div className="room-row__name-only">
-            <h3 className="room-row__name">{name}</h3>
+            <h3 className={`room-row__name ${hasOverride ? 'room-row__name--override' : ''}`}>{name}</h3>
 
-            {/* Light status indicators for light-only zones */}
-            {totalLights > 0 && (
+            {/* Light, plug, and lock status indicators for light-only zones */}
+            {(totalLights > 0 || totalPlugs > 0 || totalLocks > 0) && (
               <div className="room-row__lights">
                 <div className="light-status-indicator__dots">
                   {lights.map((light, idx) => {
@@ -144,11 +176,37 @@ export default function RoomRow({ zone, sparklineData, lights, onClick }) {
                     const isOn = displayState === 'on';
                     return (
                       <motion.div
-                        key={idx}
+                        key={`light-${idx}`}
                         className={`light-dot ${isOn ? 'light-dot--on' : ''}`}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: idx * 0.05 }}
+                      />
+                    );
+                  })}
+                  {plugs.map((plug, idx) => {
+                    const displayState = plug.pendingChange?.state ?? plug.state;
+                    const isOn = displayState === 'on';
+                    return (
+                      <motion.div
+                        key={`plug-${idx}`}
+                        className={`plug-dot ${isOn ? 'plug-dot--on' : ''}`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: (lights.length + idx) * 0.05 }}
+                      />
+                    );
+                  })}
+                  {locks.map((lock, idx) => {
+                    const displayState = lock.pendingChange?.state ?? lock.state;
+                    const isUnlocked = displayState === 'unlocked';
+                    return (
+                      <motion.div
+                        key={`lock-${idx}`}
+                        className={`lock-dot ${isUnlocked ? 'lock-dot--unlocked' : ''}`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: (lights.length + plugs.length + idx) * 0.05 }}
                       />
                     );
                   })}

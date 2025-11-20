@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import RoomRow from './RoomRow';
 import RoomModal from './RoomModal';
+import { LOCK_CONFIG } from '../services/sheets';
 import './TufteDashboard.css';
 
 /**
@@ -35,7 +36,7 @@ const getSparklineData = (zoneName, logs) => {
   return sparklineData.reverse();
 };
 
-export default function TufteDashboard({ zones, lightOnlyZones = [], lights = [], logs, onUpdateZone, onToggleLight }) {
+export default function TufteDashboard({ zones, lightOnlyZones = [], lights = [], plugs = [], locks = [], logs, onUpdateZone, onRestoreDefault, onToggleLight, onTogglePlug, onToggleLock }) {
   const [selectedZone, setSelectedZone] = useState(null);
   // Group by floor, separating HVAC zones from light-only zones
   const floors = [
@@ -75,6 +76,34 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
     });
   };
 
+  // Get plug status for a zone
+  const getZonePlugs = (zone) => {
+    if (!zone.plugs || zone.plugs.length === 0) return [];
+
+    return zone.plugs.map(plugDef => {
+      const plugData = plugs.find(p => p.id === plugDef.id);
+      return {
+        ...plugDef,
+        state: plugData?.state || 'off',
+        pendingChange: plugData?.pendingChange,
+      };
+    });
+  };
+
+  // Get lock status for a zone
+  const getZoneLocks = (zone) => {
+    if (!zone.locks || zone.locks.length === 0) return [];
+
+    return zone.locks.map(lockDef => {
+      const lockData = locks.find(l => l.id === lockDef.id);
+      return {
+        ...lockDef,
+        state: lockData?.state || 'locked',
+        pendingChange: lockData?.pendingChange,
+      };
+    });
+  };
+
   const handleRoomClick = (zone) => {
     setSelectedZone(zone);
   };
@@ -96,6 +125,8 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
                 {floor.hvacZones.map(zone => {
                   const sparklineData = getSparklineData(zone.unitName || zone.name, logs);
                   const zoneLights = getZoneLights(zone);
+                  const zonePlugs = getZonePlugs(zone);
+                  const zoneLocks = getZoneLocks(zone);
 
                   return (
                     <RoomRow
@@ -103,6 +134,8 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
                       zone={zone}
                       sparklineData={sparklineData}
                       lights={zoneLights}
+                      plugs={zonePlugs}
+                      locks={zoneLocks}
                       onClick={() => handleRoomClick(zone)}
                     />
                   );
@@ -116,6 +149,8 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
                   >
                     {floor.lightOnlyZones.map(zone => {
                       const zoneLights = getZoneLights(zone);
+                      const zonePlugs = getZonePlugs(zone);
+                      const zoneLocks = getZoneLocks(zone);
 
                       return (
                         <RoomRow
@@ -123,6 +158,8 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
                           zone={zone}
                           sparklineData={[]}
                           lights={zoneLights}
+                          plugs={zonePlugs}
+                          locks={zoneLocks}
                           onClick={() => handleRoomClick(zone)}
                         />
                       );
@@ -146,9 +183,15 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
             key={liveZone.id}
             zone={liveZone}
             lights={getZoneLights(liveZone)}
+            plugs={getZonePlugs(liveZone)}
+            locks={getZoneLocks(liveZone)}
+            allZones={zones}
             onClose={handleCloseModal}
             onUpdateZone={onUpdateZone}
+            onRestoreDefault={onRestoreDefault}
             onToggleLight={onToggleLight}
+            onTogglePlug={onTogglePlug}
+            onToggleLock={onToggleLock}
           />
         );
       })()}

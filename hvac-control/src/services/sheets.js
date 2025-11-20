@@ -28,6 +28,9 @@ export const ZONES = [
       { name: 'Studio Ceiling', row: 7 },
       { name: 'Studio Floor Lamp', row: 9 },
       { name: 'Studio Desk Lamp', row: 10 }
+    ],
+    locks: [
+      { name: 'Patio Door', id: 'patio_door' }
     ]
   },
 
@@ -84,6 +87,9 @@ export const ZONES = [
       { name: 'Entryway', row: 17 },
       { name: 'Foyer Lights', row: 20 },
       { name: 'Chandelier', row: 19 }
+    ],
+    locks: [
+      { name: 'Front Door', id: 'front_door' }
     ]
   },
 
@@ -98,6 +104,9 @@ export const ZONES = [
     lights: [
       { name: 'Floor Lamp', row: 5 },
       { name: 'Ceiling', row: 6 }
+    ],
+    plugs: [
+      { name: 'TV', id: '3fl_bed_tv' }
     ]
   },
 
@@ -124,9 +133,144 @@ export const ZONES = [
     loop: 1,
     lights: [
       { name: 'Main Lights', row: 15 }
+    ],
+    plugs: [
+      { name: 'TV', id: '2fl_den_tv' }
     ]
   },
 ];
+
+// Smart plug configuration
+// Maps plug IDs to webhook event names and Lights sheet rows
+// Status in Lights!D column - OFF = off, ON = on
+// Timestamps in Lights!B (on) and Lights!C (off)
+export const PLUG_CONFIG = {
+  '2fl_den_tv': {
+    name: 'Den TV',
+    row: 32, // Update this to the actual row in your Lights sheet
+    webhooks: { on: '2fl_den_tv_on', off: '2fl_den_tv_off' },
+  },
+  '3fl_bed_tv': {
+    name: 'Bedroom TV',
+    row: 33, // Update this to the actual row in your Lights sheet
+    webhooks: { on: '3fl_bed_tv_on', off: '3fl_bed_tv_off' },
+  },
+};
+
+// Legacy export for backward compatibility
+export const PLUG_WEBHOOKS = Object.fromEntries(
+  Object.entries(PLUG_CONFIG).map(([id, config]) => [id, config.webhooks])
+);
+
+// Door lock configuration
+// Maps lock IDs to webhook event names and Lights sheet rows
+// Status in Lights!D40:D44 - OFF = locked/closed, ON = unlocked/open
+export const LOCK_CONFIG = {
+  'basement_door': {
+    name: 'Basement Door',
+    row: 40,
+    webhooks: { unlock: 'basement_door_unlock', lock: 'basement_door_lock' },
+  },
+  'front_door': {
+    name: 'Front Door',
+    row: 41,
+    webhooks: { unlock: 'front_door_unlock', lock: 'front_door_lock' },
+  },
+  'patio_door': {
+    name: 'Patio Door',
+    row: 42,
+    webhooks: { unlock: 'patio_door_unlock', lock: 'patio_door_lock' },
+  },
+  'alley_door': {
+    name: 'Alley Door',
+    row: 43,
+    webhooks: { unlock: 'alley_door_unlock', lock: 'alley_door_lock' },
+  },
+  'garage_door': {
+    name: 'Garage Door',
+    row: 44,
+    webhooks: { lock: 'garage_door_close' }, // Close only - no open webhook
+    closeOnly: true, // Flag to indicate this is a close-only device
+  },
+};
+
+/**
+ * Fetch plug status from Lights sheet
+ * Reads from configured rows in PLUG_CONFIG
+ */
+export async function fetchPlugStatus() {
+  try {
+    const plugEntries = Object.entries(PLUG_CONFIG);
+    if (plugEntries.length === 0) return [];
+
+    // Get the range covering all plug rows
+    const rows = plugEntries.map(([_, config]) => config.row);
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+
+    const states = await fetchRange(`Lights!D${minRow}:D${maxRow}`);
+
+    const plugs = plugEntries.map(([id, config]) => {
+      const rowIndex = config.row - minRow;
+      const cellValue = states[rowIndex]?.[0];
+      const state = cellValue?.toLowerCase() === 'on' ? 'on' : 'off';
+
+      return {
+        id,
+        name: config.name,
+        row: config.row,
+        state,
+      };
+    });
+
+    console.log('Fetched plug states:', plugs);
+    return plugs;
+  } catch (error) {
+    console.error('Error fetching plug status:', error);
+    return Object.entries(PLUG_CONFIG).map(([id, config]) => ({
+      id,
+      name: config.name,
+      row: config.row,
+      state: 'off', // Default to off on error
+    }));
+  }
+}
+
+/**
+ * Toggle smart plug via IFTTT webhook
+ * @param {string} plugId - Plug ID (e.g., '2fl_den_tv')
+ * @param {string} currentState - Current state ('on' or 'off')
+ */
+export async function togglePlug(plugId, currentState = 'off') {
+  try {
+    const targetState = currentState === 'on' ? 'off' : 'on';
+
+    const plugConfig = PLUG_CONFIG[plugId];
+    if (!plugConfig) {
+      throw new Error(`No configuration found for plug ${plugId}`);
+    }
+
+    const eventName = plugConfig.webhooks[targetState];
+    const url = `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}`;
+
+    console.log(`Toggling plug: ${plugConfig.name} -> ${targetState}`);
+    console.log(`Webhook URL: ${url}`);
+
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+    });
+
+    // Update timestamp in Lights sheet
+    await updateLightTimestamp(plugConfig.row, targetState);
+
+    console.log(`Plug webhook sent successfully`);
+    return { success: true, targetState };
+  } catch (error) {
+    console.error('Error toggling plug:', error);
+    throw error;
+  }
+}
 
 // Additional rooms without HVAC but with lights
 export const LIGHT_ONLY_ZONES = [
@@ -215,6 +359,9 @@ export const LIGHT_ONLY_ZONES = [
     hasHvac: false,
     lights: [
       { name: 'Utility', row: 12 }
+    ],
+    locks: [
+      { name: 'Basement Door', id: 'basement_door' }
     ]
   },
   {
@@ -256,6 +403,10 @@ export const LIGHT_ONLY_ZONES = [
     hasHvac: false,
     lights: [
       { name: 'Backyard', row: 18 }
+    ],
+    locks: [
+      { name: 'Alley Door', id: 'alley_door' },
+      { name: 'Garage Door', id: 'garage_door' }
     ]
   }
 ];
@@ -321,26 +472,92 @@ async function updateRange(range, values) {
 
 /**
  * Fetch current panel status
+ * Reads from both Control sheet (overrides) and Panel sheet (defaults)
  */
 export async function fetchPanelStatus() {
   try {
-    const [names, temps, minutesAgo, preferredStates] = await Promise.all([
+    const [
+      names,
+      temps,
+      minutesAgo,
+      // Control sheet - override values
+      controlOverride,
+      controlPower,
+      controlMode,
+      controlTarget,
+      // Panel sheet - default values
+      defaultPower,
+      defaultMode,
+      defaultTarget,
+    ] = await Promise.all([
       fetchRange('Panel!C2:C9'),
       fetchRange('Panel!F2:F9'),
       fetchRange('Panel!E2:E9'),
-      fetchRange('Panel!A2:A9'),
+      // Control sheet columns
+      fetchRange('Control!B1:B8'),  // Override flag (TRUE/FALSE)
+      fetchRange('Control!D1:D8'),  // Power (Onn/Off)
+      fetchRange('Control!E1:E8'),  // Mode (Heat/Cool)
+      fetchRange('Control!I1:I8'),  // Target temp (e.g., 68a)
+      // Panel sheet default columns
+      fetchRange('Panel!G2:G9'),    // Default power
+      fetchRange('Panel!H2:H9'),    // Default mode
+      fetchRange('Panel!J2:J9'),    // Default thermostat
     ]);
 
-    return ZONES.map((zone, index) => ({
-      ...zone,
-      unitName: names[index]?.[0] || zone.name,
-      temperature: parseFloat(temps[index]?.[0]) || null,
-      minutesSinceUpdate: parseInt(minutesAgo[index]?.[0]) || null,
-      preferredState: parsePreferredState(preferredStates[index]?.[0] || ''),
-    }));
+    return ZONES.map((zone, index) => {
+      const hasOverride = controlOverride[index]?.[0] === true ||
+                          controlOverride[index]?.[0] === 'TRUE' ||
+                          controlOverride[index]?.[0] === true;
+
+      // Parse default state from Panel sheet
+      const defaultState = {
+        power: defaultPower[index]?.[0]?.toLowerCase().includes('on') ? 'on' : 'off',
+        mode: defaultMode[index]?.[0]?.toLowerCase() || 'heat',
+        target: parseInt(defaultTarget[index]?.[0]) || null,
+      };
+
+      // Determine current state based on override
+      let currentState;
+      if (hasOverride) {
+        // Use Control sheet values
+        const powerVal = controlPower[index]?.[0] || 'Off';
+        const modeVal = controlMode[index]?.[0] || 'Heat';
+        const targetVal = controlTarget[index]?.[0] || '68a';
+
+        currentState = {
+          power: powerVal.toLowerCase().includes('on') ? 'on' : 'off',
+          mode: modeVal.toLowerCase(),
+          target: parseInt(targetVal) || null,
+          fan: targetVal.slice(-1) === 'a' ? 'auto' : 'high',
+        };
+      } else {
+        // Use Panel sheet defaults
+        currentState = {
+          ...defaultState,
+          fan: 'auto',
+        };
+      }
+
+      return {
+        ...zone,
+        unitName: names[index]?.[0] || zone.name,
+        temperature: parseFloat(temps[index]?.[0]) || null,
+        minutesSinceUpdate: parseInt(minutesAgo[index]?.[0]) || null,
+        preferredState: currentState,
+        defaultState: defaultState,
+        hasOverride: hasOverride,
+      };
+    });
   } catch (error) {
     console.error('Error fetching panel status:', error);
-    return ZONES.map(zone => ({ ...zone, temperature: null, minutesSinceUpdate: null, preferredState: {} }));
+    return ZONES.map(zone => ({
+      ...zone,
+      temperature: null,
+      minutesSinceUpdate: null,
+      preferredState: { power: 'off', mode: 'heat', target: null, fan: 'auto' },
+      defaultState: { power: 'off', mode: 'heat', target: null },
+      hasOverride: false,
+    }));
   }
 }
 
@@ -401,10 +618,20 @@ export async function updateControl(zoneIndex, field, value) {
       // Capitalize mode for sheet format (Heat/Cool)
       transformedValue = value.charAt(0).toUpperCase() + value.slice(1);
       break;
+    case 'target':
+      column = 'I';
+      // Format as temperature with 'a' suffix (e.g., 68a, 72a)
+      transformedValue = `${value}a`;
+      break;
     case 'action':
       column = 'B';
       // Use boolean TRUE for checkbox format
       transformedValue = true;
+      break;
+    case 'clearOverride':
+      column = 'B';
+      // Clear the override flag
+      transformedValue = false;
       break;
     default:
       return { success: false, error: 'Invalid field' };
@@ -412,6 +639,16 @@ export async function updateControl(zoneIndex, field, value) {
 
   const range = `Control!${column}${rowNum}`;
   return updateRange(range, [[transformedValue]]);
+}
+
+/**
+ * Get zones in the same loop as the given zone
+ */
+export function getLoopZones(zoneId) {
+  const zone = ZONES.find(z => z.id === zoneId);
+  if (!zone || !zone.loop) return [];
+
+  return ZONES.filter(z => z.loop === zone.loop && z.id !== zoneId);
 }
 
 /**
@@ -565,6 +802,69 @@ export async function fetchLightStatus() {
 // IFTTT webhook configuration
 const IFTTT_KEY = import.meta.env.VITE_IFTTT_WEBHOOK_KEY || '';
 
+// HVAC webhook configuration for direct Cielo control
+// Maps zone IDs to webhook event names for faster response
+// Order matches Control sheet rows 1-8:
+// Row 1: Apartment (Basement), Row 2: JRs Office, Row 3: Main Kitchen, Row 4: Kids Bedroom
+// Row 5: Front Hall, Row 6: Primary Bedroom, Row 7: NBs Office, Row 8: Den
+const HVAC_WEBHOOKS = {
+  'apartment': 'b_kitchen_hvac',        // Row 1: Basement/Apartment
+  'jrs_office': '2fl_office_hvac',      // Row 2: JR's Office
+  'main_kitchen': '1fl_kitchen_hvac',   // Row 3: Main Kitchen
+  'kids_bedroom': '2fl_bedroom_hvac',   // Row 4: Kids Bedroom
+  'front_hall': '1fl_hall_hvac',        // Row 5: Front Hall
+  'primary_bedroom': '3fl_bedroom_hvac', // Row 6: Primary Bedroom
+  'nbs_office': '3fl_office_hvac',      // Row 7: NB's Office
+  'denn': '2fl_den_hvac',               // Row 8: Den
+};
+
+/**
+ * Trigger HVAC webhook for direct Cielo control
+ * @param {string} zoneId - Zone ID (e.g., 'nbs_office')
+ * @param {string} power - 'on' or 'off'
+ * @param {string} mode - 'heat' or 'cool'
+ * @param {number} target - Target temperature in Fahrenheit
+ */
+export async function triggerHvacWebhook(zoneId, power, mode, target) {
+  const webhookName = HVAC_WEBHOOKS[zoneId];
+  if (!webhookName) {
+    console.log(`No direct HVAC webhook configured for zone ${zoneId}`);
+    return { success: false, reason: 'no_webhook' };
+  }
+
+  if (!IFTTT_KEY) {
+    console.error('IFTTT webhook key not configured');
+    return { success: false, reason: 'no_key' };
+  }
+
+  try {
+    // Format values for IFTTT filter code
+    // Value1: 'Onn' or 'Off'
+    // Value2: 'Heat' or 'Cool'
+    // Value3: target temperature (e.g., '67')
+    const value1 = power === 'on' ? 'Onn' : 'Off';
+    const value2 = mode.charAt(0).toUpperCase() + mode.slice(1); // 'heat' -> 'Heat'
+    const value3 = target?.toString() || '68'; // Default to 68 if no target specified
+
+    // Use query parameters for IFTTT webhooks
+    const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}?value1=${encodeURIComponent(value1)}&value2=${encodeURIComponent(value2)}&value3=${encodeURIComponent(value3)}`;
+
+    console.log(`Triggering HVAC webhook: ${webhookName}`);
+    console.log(`Values: power=${value1}, mode=${value2}, temp=${value3}`);
+
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors', // IFTTT doesn't support CORS
+    });
+
+    console.log(`HVAC webhook sent successfully for ${zoneId}`);
+    return { success: true, values: { value1, value2, value3 } };
+  } catch (error) {
+    console.error('Error triggering HVAC webhook:', error);
+    return { success: false, reason: 'error', error };
+  }
+}
+
 // Mapping of Lights sheet rows to webhook event names
 // Based on the order in your Lights sheet
 const LIGHT_WEBHOOKS = {
@@ -604,6 +904,160 @@ const LIGHT_WEBHOOKS = {
 // Set to true to use universal webhooks instead of individual ones
 // NOTE: Setting device dynamically via filter code doesn't seem to work in IFTTT
 const USE_UNIVERSAL_WEBHOOKS = false;
+
+/**
+ * Format date for Lights sheet timestamp
+ * Format: "November 19, 2025 at 06:26:02PM"
+ */
+function formatLightTimestamp(date = new Date()) {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 should be 12
+  const hoursStr = hours.toString().padStart(2, '0');
+
+  return `${month} ${day}, ${year} at ${hoursStr}:${minutes}:${seconds}${ampm}`;
+}
+
+/**
+ * Update the last-updated timestamp for a light/plug/lock in the Lights sheet
+ * Column B for On, Column C for Off
+ * @param {number} row - Row number in Lights sheet
+ * @param {string} state - 'on' or 'off' (or 'unlocked'/'locked' for locks)
+ */
+async function updateLightTimestamp(row, state) {
+  const accessToken = getAccessToken();
+
+  if (!accessToken) {
+    console.log('Not authenticated - skipping timestamp update');
+    return;
+  }
+
+  try {
+    // Column B for On/Unlocked, Column C for Off/Locked
+    const isOn = state === 'on' || state === 'unlocked';
+    const column = isOn ? 'B' : 'C';
+    const timestamp = formatLightTimestamp();
+
+    const range = `Lights!${column}${row}`;
+    await updateRange(range, [[timestamp]]);
+
+    console.log(`Updated timestamp for row ${row}, column ${column}: ${timestamp}`);
+  } catch (error) {
+    console.error('Error updating light timestamp:', error);
+    // Don't throw - timestamp update is secondary to the webhook
+  }
+}
+
+/**
+ * Fetch lock status from Lights sheet
+ * Rows 40-44 contain lock status in column D (OFF = locked, ON = unlocked)
+ */
+export async function fetchLockStatus() {
+  try {
+    const states = await fetchRange('Lights!D40:D44');
+
+    const locks = Object.entries(LOCK_CONFIG).map(([id, config], index) => {
+      const cellValue = states[index]?.[0];
+      // OFF = locked, ON = unlocked
+      const isUnlocked = cellValue?.toLowerCase() === 'on';
+
+      return {
+        id,
+        name: config.name,
+        row: config.row,
+        state: isUnlocked ? 'unlocked' : 'locked',
+      };
+    });
+
+    console.log('Fetched lock states:', locks);
+    return locks;
+  } catch (error) {
+    console.error('Error fetching lock status:', error);
+    return Object.entries(LOCK_CONFIG).map(([id, config]) => ({
+      id,
+      name: config.name,
+      row: config.row,
+      state: 'locked', // Default to locked on error
+    }));
+  }
+}
+
+/**
+ * Toggle lock via IFTTT webhook
+ * @param {string} lockId - Lock ID (e.g., 'front_door')
+ * @param {string} currentState - Current state ('locked' or 'unlocked')
+ */
+export async function toggleLock(lockId, currentState = 'locked') {
+  try {
+    const lockConfig = LOCK_CONFIG[lockId];
+    if (!lockConfig) {
+      throw new Error(`No configuration found for lock ${lockId}`);
+    }
+
+    // For close-only locks (like garage), only allow closing
+    if (lockConfig.closeOnly) {
+      if (currentState === 'locked') {
+        console.log(`${lockConfig.name} is already closed`);
+        return { success: false, reason: 'already_closed' };
+      }
+      // Always close when toggling a close-only lock
+      const webhookName = lockConfig.webhooks.lock;
+      const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}`;
+
+      console.log(`Closing ${lockConfig.name}`);
+      console.log(`Webhook URL: ${url}`);
+
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+      });
+
+      // Update timestamp in Lights sheet
+      await updateLightTimestamp(lockConfig.row, 'locked');
+
+      console.log(`Close command sent successfully`);
+      return { success: true, targetState: 'locked' };
+    }
+
+    // Normal toggle behavior for regular locks
+    const targetState = currentState === 'locked' ? 'unlocked' : 'locked';
+
+    const webhookName = targetState === 'unlocked'
+      ? lockConfig.webhooks.unlock
+      : lockConfig.webhooks.lock;
+
+    const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}`;
+
+    console.log(`Toggling lock: ${lockConfig.name} -> ${targetState}`);
+    console.log(`Webhook URL: ${url}`);
+
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+    });
+
+    // Update timestamp in Lights sheet
+    await updateLightTimestamp(lockConfig.row, targetState);
+
+    console.log(`Lock webhook sent successfully`);
+    return { success: true, targetState };
+  } catch (error) {
+    console.error('Error toggling lock:', error);
+    throw error;
+  }
+}
 
 /**
  * Toggle light via IFTTT webhook
@@ -652,6 +1106,9 @@ export async function toggleLight(row, lightName, currentState = 'off') {
       method: 'POST',
       mode: 'no-cors', // IFTTT doesn't support CORS
     });
+
+    // Update timestamp in Lights sheet
+    await updateLightTimestamp(row, targetState);
 
     // Note: no-cors mode means we can't check response status
     // We assume success and rely on Google Sheets update to confirm
