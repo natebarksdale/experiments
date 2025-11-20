@@ -567,8 +567,8 @@
 /* Light Controls */
 .room-modal__lights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--s-2);
 }
 
 .light-control-btn {
@@ -576,8 +576,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-4);
+  gap: var(--s-1);
+  padding: var(--s-3);
   background: var(--gray-100);
   border: 2px solid var(--gray-200);
   border-radius: 4px;
@@ -618,20 +618,20 @@
 }
 
 .light-control-btn__icon {
-  font-size: 2rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
 .light-control-btn__name {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--black);
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .light-control-btn__state {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--gray-500);
@@ -648,8 +648,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-4);
+  gap: var(--s-1);
+  padding: var(--s-3);
   background: var(--gray-100);
   border: 2px solid var(--gray-200);
   border-radius: 4px;
@@ -690,20 +690,20 @@
 }
 
 .plug-control-btn__icon {
-  font-size: 2rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
 .plug-control-btn__name {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--black);
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .plug-control-btn__state {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--gray-500);
@@ -720,8 +720,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-4);
+  gap: var(--s-1);
+  padding: var(--s-3);
   background: var(--gray-100);
   border: 2px solid var(--gray-200);
   border-radius: 4px;
@@ -762,20 +762,20 @@
 }
 
 .lock-control-btn__icon {
-  font-size: 2rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
 .lock-control-btn__name {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--black);
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .lock-control-btn__state {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--gray-500);

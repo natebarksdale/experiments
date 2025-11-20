@@ -105,6 +105,29 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
   };
 
   const handleRoomClick = (zone) => {
+    // For light-only zones with exactly one control (light or plug), toggle directly
+    if (!zone.hasHvac) {
+      const zoneLights = getZoneLights(zone);
+      const zonePlugs = getZonePlugs(zone);
+      const zoneLocks = getZoneLocks(zone);
+      const totalControls = zoneLights.length + zonePlugs.length + zoneLocks.length;
+
+      if (totalControls === 1) {
+        // Direct toggle - don't open modal
+        if (zoneLights.length === 1) {
+          const light = zoneLights[0];
+          onToggleLight(light.row, light.name);
+          return;
+        } else if (zonePlugs.length === 1) {
+          const plug = zonePlugs[0];
+          onTogglePlug(plug.id, plug.name);
+          return;
+        }
+        // Note: locks are not toggled directly - they still open modal
+      }
+    }
+
+    // Otherwise, open modal
     setSelectedZone(zone);
   };
 
