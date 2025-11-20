@@ -1,0 +1,357 @@
+/* Modern Design - Paul Rand & Saul Bass Inspired */
+
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Primary Palette - Bold & Geometric */
+  --modern-black: #1a1a1a;
+  --modern-white: #fafafa;
+  --modern-red: #E63946;
+  --modern-yellow: #F9C74F;
+  --modern-blue: #4A90E2;
+  --modern-green: #2A9D8F;
+  --modern-orange: #F77F00;
+  --modern-purple: #9B5DE5;
+
+  /* Neutrals */
+  --modern-gray-dark: #333333;
+  --modern-gray: #7a7a7a;
+  --modern-gray-light: #d4d4d4;
+  --modern-gray-pale: #f0f0f0;
+
+  /* Semantic */
+  --modern-heat: var(--modern-red);
+  --modern-cool: var(--modern-blue);
+  --modern-light: var(--modern-yellow);
+  --modern-lock: var(--modern-purple);
+  --modern-plug: var(--modern-orange);
+
+  /* Typography */
+  --modern-font-display: 'Anybody', sans-serif;
+  --modern-font-mono: 'Space Mono', monospace;
+
+  /* Spacing - Based on 12px module */
+  --modern-s1: 6px;
+  --modern-s2: 12px;
+  --modern-s3: 18px;
+  --modern-s4: 24px;
+  --modern-s5: 36px;
+  --modern-s6: 48px;
+  --modern-s8: 72px;
+
+  /* Shapes */
+  --modern-radius: 2px;
+  --modern-radius-lg: 4px;
+
+  /* Animation */
+  --modern-transition: cubic-bezier(0.23, 1, 0.32, 1);
+  --modern-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Global Reset */
+.modern-app * {
+  box-sizing: border-box;
+}
+
+.modern-app {
+  min-height: 100vh;
+  background: var(--modern-white);
+  font-family: var(--modern-font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Decorative Background Shapes */
+.modern-app::before,
+.modern-app::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.modern-app::before {
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: var(--modern-yellow);
+  opacity: 0.08;
+  border-radius: 50%;
+  animation: modern-float 20s ease-in-out infinite;
+}
+
+.modern-app::after {
+  bottom: -150px;
+  left: -150px;
+  width: 450px;
+  height: 450px;
+  background: var(--modern-blue);
+  opacity: 0.06;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  animation: modern-rotate 30s linear infinite;
+}
+
+@keyframes modern-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -30px) scale(1.1); }
+}
+
+@keyframes modern-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.modern-header {
+  background: var(--modern-black);
+  color: var(--modern-white);
+  padding: var(--modern-s3) var(--modern-s4);
+  position: relative;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.modern-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--modern-red) 0%,
+    var(--modern-orange) 25%,
+    var(--modern-yellow) 50%,
+    var(--modern-green) 75%,
+    var(--modern-blue) 100%
+  );
+}
+
+.modern-header__content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.modern-header__title {
+  font-size: 36px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+}
+
+.modern-header__title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 60%;
+  height: 4px;
+  background: var(--modern-yellow);
+  transform: skewX(-20deg);
+}
+
+.modern-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s3);
+}
+
+/* Tabs */
+.modern-tabs {
+  background: var(--modern-black);
+  padding: 0 var(--modern-s4) var(--modern-s3);
+  display: flex;
+  gap: var(--modern-s2);
+  position: relative;
+  z-index: 100;
+}
+
+.modern-tabs__inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: var(--modern-s2);
+  width: 100%;
+}
+
+.modern-tab {
+  background: transparent;
+  border: 3px solid var(--modern-gray-dark);
+  color: var(--modern-white);
+  font-family: var(--modern-font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--modern-s2) var(--modern-s4);
+  cursor: pointer;
+  transition: all 0.3s var(--modern-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--modern-yellow);
+  transition: left 0.3s var(--modern-transition);
+  z-index: -1;
+}
+
+.modern-tab:hover::before {
+  left: 0;
+}
+
+.modern-tab:hover {
+  color: var(--modern-black);
+  border-color: var(--modern-yellow);
+}
+
+.modern-tab--active {
+  background: var(--modern-yellow);
+  color: var(--modern-black);
+  border-color: var(--modern-yellow);
+  transform: translateY(-4px);
+}
+
+.modern-tab--active::before {
+  left: 0;
+}
+
+/* Buttons */
+.modern-btn {
+  font-family: var(--modern-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--modern-s2) var(--modern-s4);
+  border: 3px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s var(--modern-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s var(--modern-transition), height 0.4s var(--modern-transition);
+  z-index: -1;
+}
+
+.modern-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.modern-btn--primary {
+  color: var(--modern-white);
+  border-color: var(--modern-white);
+}
+
+.modern-btn--primary:hover {
+  color: var(--modern-black);
+}
+
+.modern-btn--refresh {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--modern-yellow);
+  border-color: var(--modern-yellow);
+}
+
+.modern-btn--refresh:hover {
+  color: var(--modern-black);
+}
+
+.modern-btn--refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modern-icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 3px;
+}
+
+.modern-icon--spinning {
+  animation: modern-spin 1s linear infinite;
+}
+
+@keyframes modern-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Main Content */
+.modern-main {
+  padding: var(--modern-s4);
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modern-header__title {
+    font-size: 36px;
+  }
+
+  .modern-header,
+  .modern-tabs {
+    padding-left: var(--modern-s4);
+    padding-right: var(--modern-s4);
+  }
+
+  .modern-main {
+    padding: var(--modern-s4);
+  }
+
+  .modern-tab {
+    font-size: 14px;
+    padding: var(--modern-s2) var(--modern-s3);
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-header__title {
+    font-size: 28px;
+  }
+
+  .modern-tab {
+    font-size: 12px;
+    padding: var(--modern-s1) var(--modern-s2);
+    letter-spacing: 0.02em;
+  }
+}

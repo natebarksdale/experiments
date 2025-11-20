@@ -1,0 +1,490 @@
+/* Modern Modal - Geometric & Bold */
+
+.victorian-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--victorian-s4);
+  animation: victorian-backdrop-in 0.3s var(--victorian-transition);
+}
+
+@keyframes victorian-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.victorian-modal {
+  background: var(--victorian-white);
+  border: 6px solid var(--victorian-black);
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 16px 16px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  animation: victorian-modal-in 0.4s var(--victorian-bounce);
+}
+
+@keyframes victorian-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Decorative Accent */
+.victorian-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--victorian-red) 0%,
+    var(--victorian-orange) 25%,
+    var(--victorian-yellow) 50%,
+    var(--victorian-green) 75%,
+    var(--victorian-blue) 100%
+  );
+  z-index: 10;
+}
+
+/* Header */
+.victorian-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--victorian-s5) var(--victorian-s5) var(--victorian-s4);
+  border-bottom: 4px solid var(--victorian-black);
+  background: var(--victorian-gray-pale);
+  margin-top: 12px;
+}
+
+.victorian-modal__title-block {
+  flex: 1;
+}
+
+.victorian-modal__title {
+  font-family: var(--victorian-font-display);
+  font-size: 36px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--victorian-s2) 0;
+  color: var(--victorian-black);
+  line-height: 1;
+}
+
+.victorian-modal__subtitle {
+  font-family: var(--victorian-font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--victorian-gray);
+  margin: 0;
+}
+
+.victorian-modal__close {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: var(--victorian-black);
+  color: var(--victorian-white);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s var(--victorian-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.victorian-modal__close::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: var(--victorian-red);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s var(--victorian-transition);
+}
+
+.victorian-modal__close:hover::before {
+  width: 100px;
+  height: 100px;
+}
+
+.victorian-modal__close-icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Content */
+.victorian-modal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--victorian-s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--victorian-s6);
+}
+
+.victorian-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--victorian-s4);
+}
+
+.victorian-modal__section-title {
+  font-family: var(--victorian-font-display);
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--victorian-gray);
+  margin: 0;
+  padding-bottom: var(--victorian-s2);
+  border-bottom: 3px solid var(--victorian-black);
+}
+
+/* Power Toggle */
+.victorian-power-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--victorian-s4);
+  background: var(--victorian-gray-pale);
+  border: 3px solid var(--victorian-black);
+  cursor: pointer;
+  transition: all 0.3s var(--victorian-transition);
+}
+
+.victorian-power-toggle:hover {
+  background: var(--victorian-white);
+  transform: translateX(4px);
+}
+
+.victorian-power-toggle__label {
+  font-family: var(--victorian-font-display);
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--victorian-black);
+}
+
+.victorian-switch {
+  width: 72px;
+  height: 40px;
+  background: var(--victorian-gray);
+  border: 4px solid var(--victorian-black);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s var(--victorian-transition);
+}
+
+.victorian-switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 28px;
+  height: 28px;
+  background: var(--victorian-black);
+  transition: all 0.3s var(--victorian-bounce);
+}
+
+.victorian-switch--on {
+  background: var(--victorian-green);
+}
+
+.victorian-switch--on .victorian-switch__thumb {
+  left: 34px;
+}
+
+/* Mode Selector */
+.victorian-mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--victorian-s3);
+}
+
+.victorian-mode-btn {
+  padding: var(--victorian-s4);
+  background: var(--victorian-gray-pale);
+  border: 4px solid var(--victorian-black);
+  font-family: var(--victorian-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--victorian-black);
+  cursor: pointer;
+  transition: all 0.3s var(--victorian-transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--victorian-s2);
+  position: relative;
+  overflow: hidden;
+}
+
+.victorian-mode-btn::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: currentColor;
+  transition: height 0.3s var(--victorian-transition);
+  opacity: 0.15;
+}
+
+.victorian-mode-btn:hover::before {
+  height: 100%;
+}
+
+.victorian-mode-btn--heat {
+  color: var(--victorian-heat);
+}
+
+.victorian-mode-btn--cool {
+  color: var(--victorian-cool);
+}
+
+.victorian-mode-btn--active {
+  background: var(--victorian-black);
+  color: var(--victorian-white);
+  transform: scale(1.05);
+}
+
+.victorian-mode-btn--active::before {
+  height: 100%;
+  opacity: 0;
+}
+
+.victorian-mode-btn__icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 3px;
+}
+
+/* Temperature Stepper */
+.victorian-temp-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--victorian-s5);
+  background: var(--victorian-black);
+  color: var(--victorian-white);
+  border: 4px solid var(--victorian-black);
+}
+
+.victorian-temp-stepper__btn {
+  width: 60px;
+  height: 60px;
+  background: var(--victorian-white);
+  color: var(--victorian-black);
+  border: 4px solid var(--victorian-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  transition: all 0.3s var(--victorian-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.victorian-temp-stepper__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--victorian-yellow);
+  transform: scale(0);
+  transition: transform 0.3s var(--victorian-bounce);
+}
+
+.victorian-temp-stepper__btn:hover::before {
+  transform: scale(1);
+}
+
+.victorian-temp-stepper__btn-icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.victorian-temp-stepper__value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--victorian-s1);
+}
+
+.victorian-temp-stepper__number {
+  font-family: var(--victorian-font-display);
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.victorian-temp-stepper__unit {
+  font-family: var(--victorian-font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+/* Warning */
+.victorian-warning {
+  display: flex;
+  gap: var(--victorian-s3);
+  padding: var(--victorian-s4);
+  background: var(--victorian-orange);
+  color: var(--victorian-white);
+  border: 4px solid var(--victorian-black);
+}
+
+.victorian-warning__icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 3px;
+  flex-shrink: 0;
+}
+
+.victorian-warning__title {
+  font-family: var(--victorian-font-display);
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin: 0 0 var(--victorian-s1) 0;
+}
+
+.victorian-warning__message {
+  font-family: var(--victorian-font-mono);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Accessory Grid */
+.victorian-accessory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--victorian-s3);
+}
+
+.victorian-accessory-btn {
+  padding: var(--victorian-s4);
+  background: var(--victorian-gray-pale);
+  border: 3px solid var(--victorian-black);
+  font-family: var(--victorian-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--victorian-black);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--victorian-s2);
+  transition: all 0.3s var(--victorian-transition);
+  position: relative;
+}
+
+.victorian-accessory-btn:hover {
+  background: var(--victorian-white);
+  transform: translateY(-4px);
+  box-shadow: 4px 8px 0 var(--victorian-black);
+}
+
+.victorian-accessory-btn:active {
+  transform: translateY(0);
+  box-shadow: 2px 4px 0 var(--victorian-black);
+}
+
+.victorian-accessory-btn--on {
+  background: var(--victorian-yellow);
+  border-color: var(--victorian-black);
+}
+
+.victorian-accessory-btn__icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 3px;
+}
+
+.victorian-accessory-btn__label {
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Footer */
+.victorian-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--victorian-s3);
+  padding: var(--victorian-s4) var(--victorian-s5);
+  border-top: 4px solid var(--victorian-black);
+  background: var(--victorian-gray-pale);
+}
+
+.victorian-modal__footer .victorian-btn {
+  min-width: 140px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .victorian-modal {
+    border-width: 4px;
+    box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .victorian-modal__header {
+    padding: var(--victorian-s4);
+  }
+
+  .victorian-modal__title {
+    font-size: 28px;
+  }
+
+  .victorian-modal__content {
+    padding: var(--victorian-s4);
+  }
+
+  .victorian-temp-stepper__number {
+    font-size: 48px;
+  }
+
+  .victorian-temp-stepper__btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .victorian-mode-selector {
+    grid-template-columns: 1fr;
+  }
+}

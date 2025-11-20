@@ -1,0 +1,110 @@
+/* Modern Dashboard - Geometric Grid */
+
+.modern-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--modern-s5);
+}
+
+.modern-floor {
+  animation: modern-floor-in 0.6s var(--modern-transition) backwards;
+}
+
+.modern-floor:nth-child(1) { animation-delay: 0.1s; }
+.modern-floor:nth-child(2) { animation-delay: 0.2s; }
+.modern-floor:nth-child(3) { animation-delay: 0.3s; }
+.modern-floor:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes modern-floor-in {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.modern-floor__header {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s2);
+  margin-bottom: var(--modern-s3);
+  position: relative;
+}
+
+.modern-floor__title {
+  font-family: var(--modern-font-display);
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--modern-black);
+  position: relative;
+  z-index: 1;
+}
+
+.modern-floor__accent {
+  width: 60px;
+  height: 8px;
+  background: var(--modern-yellow);
+  transform: skewX(-15deg);
+  margin-left: var(--modern-s2);
+}
+
+.modern-floor__line {
+  flex: 1;
+  height: 4px;
+  background: var(--modern-black);
+  position: relative;
+}
+
+.modern-floor__line::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 20px;
+  height: 100%;
+  background: var(--modern-yellow);
+}
+
+.modern-zone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--modern-s3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modern-dashboard {
+    gap: var(--modern-s6);
+  }
+
+  .modern-floor__title {
+    font-size: 36px;
+  }
+
+  .modern-floor__accent {
+    width: 60px;
+    height: 10px;
+  }
+
+  .modern-zone-grid {
+    grid-template-columns: 1fr;
+    gap: var(--modern-s3);
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-floor__title {
+    font-size: 28px;
+  }
+
+  .modern-floor__accent {
+    width: 40px;
+    height: 8px;
+  }
+}

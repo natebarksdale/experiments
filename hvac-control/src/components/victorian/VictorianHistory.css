@@ -1,0 +1,253 @@
+/* Modern History - Bold Timeline */
+
+.victorian-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--victorian-s8);
+}
+
+.victorian-history-group {
+  animation: victorian-history-in 0.5s var(--victorian-transition) backwards;
+}
+
+.victorian-history-group:nth-child(1) { animation-delay: 0.1s; }
+.victorian-history-group:nth-child(2) { animation-delay: 0.2s; }
+.victorian-history-group:nth-child(3) { animation-delay: 0.3s; }
+.victorian-history-group:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes victorian-history-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.victorian-history-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--victorian-s3);
+  margin-bottom: var(--victorian-s4);
+}
+
+.victorian-history-group__date {
+  font-family: var(--victorian-font-display);
+  font-size: 36px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--victorian-black);
+}
+
+.victorian-history-group__accent {
+  width: 60px;
+  height: 8px;
+  background: var(--victorian-yellow);
+  transform: skewX(-15deg);
+}
+
+.victorian-history-group__line {
+  flex: 1;
+  height: 3px;
+  background: var(--victorian-gray-light);
+}
+
+.victorian-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--victorian-s3);
+}
+
+.victorian-history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--victorian-s4);
+  padding: var(--victorian-s4);
+  background: var(--victorian-white);
+  border: 3px solid var(--victorian-black);
+  transition: all 0.3s var(--victorian-transition);
+  position: relative;
+  animation: victorian-item-in 0.4s var(--victorian-transition) backwards;
+}
+
+.victorian-history-item:nth-child(1) { animation-delay: 0.05s; }
+.victorian-history-item:nth-child(2) { animation-delay: 0.1s; }
+.victorian-history-item:nth-child(3) { animation-delay: 0.15s; }
+.victorian-history-item:nth-child(4) { animation-delay: 0.2s; }
+.victorian-history-item:nth-child(5) { animation-delay: 0.25s; }
+.victorian-history-item:nth-child(6) { animation-delay: 0.3s; }
+.victorian-history-item:nth-child(7) { animation-delay: 0.35s; }
+.victorian-history-item:nth-child(8) { animation-delay: 0.4s; }
+
+@keyframes victorian-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.victorian-history-item:hover {
+  transform: translateX(4px);
+  box-shadow: 4px 4px 0 var(--victorian-black);
+}
+
+.victorian-history-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--item-color, var(--victorian-gray));
+}
+
+.victorian-history-item__icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background: var(--victorian-black);
+  border: 3px solid var(--victorian-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.victorian-history-item__icon-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 3px solid var(--item-color, var(--victorian-gray));
+}
+
+.victorian-history-item__icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 3px;
+  color: var(--victorian-white);
+}
+
+.victorian-history-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.victorian-history-item__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--victorian-s2);
+  margin-bottom: var(--victorian-s1);
+}
+
+.victorian-history-item__zone {
+  font-family: var(--victorian-font-display);
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--victorian-black);
+}
+
+.victorian-history-item__time {
+  font-family: var(--victorian-font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--victorian-gray);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.victorian-history-item__change {
+  font-family: var(--victorian-font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--victorian-gray-dark);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Empty State */
+.victorian-history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--victorian-s8);
+  min-height: 400px;
+  border: 4px dashed var(--victorian-gray-light);
+  background: var(--victorian-gray-pale);
+}
+
+.victorian-history-empty__icon {
+  width: 80px;
+  height: 80px;
+  color: var(--victorian-gray);
+  margin-bottom: var(--victorian-s4);
+  stroke-width: 2px;
+}
+
+.victorian-history-empty__text {
+  font-family: var(--victorian-font-display);
+  font-size: 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--victorian-gray);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .victorian-history-group__date {
+    font-size: 28px;
+  }
+
+  .victorian-history-item {
+    padding: var(--victorian-s3);
+  }
+
+  .victorian-history-item__icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .victorian-history-item__icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .victorian-history-item__zone {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .victorian-history-group__date {
+    font-size: 24px;
+  }
+
+  .victorian-history-group__accent {
+    width: 40px;
+    height: 6px;
+  }
+
+  .victorian-history-item__zone {
+    font-size: 14px;
+  }
+
+  .victorian-history-item__time {
+    font-size: 11px;
+  }
+
+  .victorian-history-item__change {
+    font-size: 13px;
+  }
+}

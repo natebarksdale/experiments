@@ -1,0 +1,253 @@
+/* Modern History - Bold Timeline */
+
+.modern-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--modern-s8);
+}
+
+.modern-history-group {
+  animation: modern-history-in 0.5s var(--modern-transition) backwards;
+}
+
+.modern-history-group:nth-child(1) { animation-delay: 0.1s; }
+.modern-history-group:nth-child(2) { animation-delay: 0.2s; }
+.modern-history-group:nth-child(3) { animation-delay: 0.3s; }
+.modern-history-group:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes modern-history-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modern-history-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s3);
+  margin-bottom: var(--modern-s4);
+}
+
+.modern-history-group__date {
+  font-family: var(--modern-font-display);
+  font-size: 36px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--modern-black);
+}
+
+.modern-history-group__accent {
+  width: 60px;
+  height: 8px;
+  background: var(--modern-yellow);
+  transform: skewX(-15deg);
+}
+
+.modern-history-group__line {
+  flex: 1;
+  height: 3px;
+  background: var(--modern-gray-light);
+}
+
+.modern-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--modern-s3);
+}
+
+.modern-history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--modern-s4);
+  padding: var(--modern-s4);
+  background: var(--modern-white);
+  border: 3px solid var(--modern-black);
+  transition: all 0.3s var(--modern-transition);
+  position: relative;
+  animation: modern-item-in 0.4s var(--modern-transition) backwards;
+}
+
+.modern-history-item:nth-child(1) { animation-delay: 0.05s; }
+.modern-history-item:nth-child(2) { animation-delay: 0.1s; }
+.modern-history-item:nth-child(3) { animation-delay: 0.15s; }
+.modern-history-item:nth-child(4) { animation-delay: 0.2s; }
+.modern-history-item:nth-child(5) { animation-delay: 0.25s; }
+.modern-history-item:nth-child(6) { animation-delay: 0.3s; }
+.modern-history-item:nth-child(7) { animation-delay: 0.35s; }
+.modern-history-item:nth-child(8) { animation-delay: 0.4s; }
+
+@keyframes modern-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.modern-history-item:hover {
+  transform: translateX(4px);
+  box-shadow: 4px 4px 0 var(--modern-black);
+}
+
+.modern-history-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--item-color, var(--modern-gray));
+}
+
+.modern-history-item__icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background: var(--modern-black);
+  border: 3px solid var(--modern-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.modern-history-item__icon-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 3px solid var(--item-color, var(--modern-gray));
+}
+
+.modern-history-item__icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 3px;
+  color: var(--modern-white);
+}
+
+.modern-history-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.modern-history-item__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--modern-s2);
+  margin-bottom: var(--modern-s1);
+}
+
+.modern-history-item__zone {
+  font-family: var(--modern-font-display);
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--modern-black);
+}
+
+.modern-history-item__time {
+  font-family: var(--modern-font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--modern-gray);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.modern-history-item__change {
+  font-family: var(--modern-font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--modern-gray-dark);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Empty State */
+.modern-history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--modern-s8);
+  min-height: 400px;
+  border: 4px dashed var(--modern-gray-light);
+  background: var(--modern-gray-pale);
+}
+
+.modern-history-empty__icon {
+  width: 80px;
+  height: 80px;
+  color: var(--modern-gray);
+  margin-bottom: var(--modern-s4);
+  stroke-width: 2px;
+}
+
+.modern-history-empty__text {
+  font-family: var(--modern-font-display);
+  font-size: 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--modern-gray);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modern-history-group__date {
+    font-size: 28px;
+  }
+
+  .modern-history-item {
+    padding: var(--modern-s3);
+  }
+
+  .modern-history-item__icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .modern-history-item__icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .modern-history-item__zone {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-history-group__date {
+    font-size: 24px;
+  }
+
+  .modern-history-group__accent {
+    width: 40px;
+    height: 6px;
+  }
+
+  .modern-history-item__zone {
+    font-size: 14px;
+  }
+
+  .modern-history-item__time {
+    font-size: 11px;
+  }
+
+  .modern-history-item__change {
+    font-size: 13px;
+  }
+}

@@ -1,0 +1,216 @@
+/* iOS Zone Card - Control Center Aesthetic */
+
+.ios-card {
+  background: var(--ios-surface);
+  border-radius: var(--ios-radius);
+  padding: var(--ios-space-3);
+  box-shadow: var(--ios-shadow);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 0.5px solid var(--ios-gray5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ios-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-accent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ios-card:hover {
+  box-shadow: var(--ios-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.ios-card:active {
+  transform: scale(0.98);
+}
+
+/* Accent bar appears when card is active */
+.ios-card::before {
+  opacity: 1;
+}
+
+/* Pending Indicator */
+.ios-card__pending {
+  position: absolute;
+  top: var(--ios-space-2);
+  right: var(--ios-space-2);
+  width: 8px;
+  height: 8px;
+  background: var(--ios-blue);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
+}
+
+.ios-card--pending {
+  border-color: var(--ios-blue);
+}
+
+/* Override Badge */
+.ios-card--override {
+  background: linear-gradient(135deg, var(--ios-surface) 0%, rgba(255, 149, 0, 0.05) 100%);
+}
+
+/* Header */
+.ios-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ios-space-2);
+}
+
+.ios-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #000;
+}
+
+.ios-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--ios-space-2);
+  background: var(--ios-orange);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* HVAC Display */
+.ios-card__hvac {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ios-space-2);
+  margin-bottom: var(--ios-space-2);
+}
+
+.ios-card__temp {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.ios-card__temp-value {
+  font-size: 36px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #000;
+  font-variant-numeric: tabular-nums;
+}
+
+.ios-card__temp-unit {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--ios-gray);
+}
+
+.ios-card__status {
+  display: flex;
+  align-items: center;
+  gap: var(--ios-space-2);
+  flex-wrap: wrap;
+}
+
+/* Status Pills */
+.ios-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ios-space-1);
+  padding: var(--ios-space-1) var(--ios-space-3);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+}
+
+.ios-status-pill--heat {
+  background: rgba(255, 149, 0, 0.15);
+  color: var(--ios-orange);
+}
+
+.ios-status-pill--cool {
+  background: rgba(90, 200, 250, 0.15);
+  color: var(--ios-teal);
+}
+
+.ios-status-pill--off {
+  background: var(--ios-gray6);
+  color: var(--ios-gray);
+}
+
+.ios-status-pill__icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.ios-status-pill__text {
+  line-height: 1;
+}
+
+.ios-card__delta {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ios-gray);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessories */
+.ios-card__accessories {
+  display: flex;
+  align-items: center;
+  gap: var(--ios-space-3);
+  padding-top: var(--ios-space-2);
+  border-top: 0.5px solid var(--ios-gray5);
+}
+
+.ios-accessory {
+  display: flex;
+  align-items: center;
+  gap: var(--ios-space-2);
+  color: var(--ios-gray);
+}
+
+.ios-accessory__icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2px;
+}
+
+.ios-accessory__count {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .ios-card {
+    padding: var(--ios-space-3);
+  }
+
+  .ios-card__temp-value {
+    font-size: 40px;
+  }
+
+  .ios-card__temp-unit {
+    font-size: 24px;
+  }
+
+  .ios-card__accessories {
+    gap: var(--ios-space-3);
+  }
+}

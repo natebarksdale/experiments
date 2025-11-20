@@ -1,0 +1,262 @@
+/* Modern Zone Card - Geometric & Bold */
+
+.modern-card {
+  background: var(--modern-white);
+  border: 4px solid var(--modern-black);
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s var(--modern-transition);
+  box-shadow: 8px 8px 0 var(--modern-black);
+}
+
+.modern-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 12px 12px 0 var(--modern-black);
+}
+
+.modern-card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 6px 6px 0 var(--modern-black);
+}
+
+/* Decorative Shape */
+.modern-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 120px;
+  height: 120px;
+  background: var(--card-accent, var(--modern-gray-pale));
+  opacity: 0.15;
+  transition: all 0.4s var(--modern-transition);
+  z-index: 0;
+}
+
+.modern-card:hover::before {
+  transform: rotate(45deg) scale(1.2);
+  opacity: 0.25;
+}
+
+/* Accent Bar */
+.modern-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: var(--card-accent, var(--modern-gray-light));
+  z-index: 1;
+}
+
+/* Pending Indicator */
+.modern-card--pending::after {
+  animation: modern-pulse-bar 1.5s ease-in-out infinite;
+}
+
+@keyframes modern-pulse-bar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.modern-card__content {
+  padding: var(--modern-s3);
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.modern-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--modern-s3);
+  padding-top: var(--modern-s1);
+}
+
+.modern-card__name {
+  font-family: var(--modern-font-display);
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--modern-black);
+  line-height: 1.1;
+}
+
+.modern-card__badge {
+  display: inline-block;
+  padding: var(--modern-s1) var(--modern-s2);
+  background: var(--modern-black);
+  color: var(--modern-yellow);
+  font-family: var(--modern-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transform: rotate(-2deg);
+}
+
+/* HVAC Display */
+.modern-card__hvac {
+  margin-bottom: var(--modern-s3);
+}
+
+.modern-card__temp-display {
+  display: flex;
+  align-items: baseline;
+  gap: var(--modern-s1);
+  margin-bottom: var(--modern-s2);
+}
+
+.modern-card__temp {
+  font-family: var(--modern-font-display);
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--modern-black);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.modern-card__temp-unit {
+  font-family: var(--modern-font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--modern-gray);
+}
+
+.modern-card__status {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s2);
+  flex-wrap: wrap;
+}
+
+/* Status Badge */
+.modern-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--modern-s1);
+  padding: var(--modern-s1) var(--modern-s3);
+  font-family: var(--modern-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 3px solid currentColor;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-status-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: currentColor;
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.modern-status-badge--heat {
+  color: var(--modern-heat);
+}
+
+.modern-status-badge--cool {
+  color: var(--modern-cool);
+}
+
+.modern-status-badge--off {
+  color: var(--modern-gray);
+}
+
+.modern-status-badge__icon {
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.modern-card__delta {
+  font-family: var(--modern-font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--modern-gray);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessories */
+.modern-card__accessories {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s3);
+  padding-top: var(--modern-s2);
+  border-top: 3px solid var(--modern-black);
+}
+
+.modern-accessory {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s2);
+  color: var(--modern-black);
+}
+
+.modern-accessory__icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 3px;
+}
+
+.modern-accessory__count {
+  font-family: var(--modern-font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Geometric Shape Variants */
+.modern-card:nth-child(3n + 1)::before {
+  border-radius: 50%;
+}
+
+.modern-card:nth-child(3n + 2)::before {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.modern-card:nth-child(3n + 3)::before {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .modern-card {
+    border-width: 3px;
+    box-shadow: 6px 6px 0 var(--modern-black);
+  }
+
+  .modern-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0 var(--modern-black);
+  }
+
+  .modern-card__content {
+    padding: var(--modern-s3);
+  }
+
+  .modern-card__temp {
+    font-size: 56px;
+  }
+
+  .modern-card__temp-unit {
+    font-size: 20px;
+  }
+
+  .modern-card__name {
+    font-size: 20px;
+  }
+}

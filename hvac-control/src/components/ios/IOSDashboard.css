@@ -1,0 +1,63 @@
+/* iOS Dashboard - Grid Layout with Cards */
+
+.ios-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ios-space-5);
+}
+
+.ios-floor {
+  animation: ios-floor-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.ios-floor:nth-child(1) { animation-delay: 0.05s; }
+.ios-floor:nth-child(2) { animation-delay: 0.1s; }
+.ios-floor:nth-child(3) { animation-delay: 0.15s; }
+.ios-floor:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes ios-floor-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ios-floor__title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--ios-space-3) 0;
+  color: #000;
+}
+
+.ios-zone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--ios-space-3);
+}
+
+@media (max-width: 768px) {
+  .ios-dashboard {
+    gap: var(--ios-space-6);
+  }
+
+  .ios-floor__title {
+    font-size: 20px;
+  }
+
+  .ios-zone-grid {
+    grid-template-columns: 1fr;
+    gap: var(--ios-space-3);
+  }
+}
+
+@media (max-width: 480px) {
+  .ios-floor__title {
+    font-size: 18px;
+    margin-bottom: var(--ios-space-3);
+  }
+}

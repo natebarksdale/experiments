@@ -1,0 +1,391 @@
+/* iOS Modal - Sheet Presentation */
+
+.ios-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  padding: 0;
+}
+
+.ios-modal {
+  background: var(--ios-surface);
+  border-radius: var(--ios-radius-lg) var(--ios-radius-lg) 0 0;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Handle */
+.ios-modal__handle {
+  width: 36px;
+  height: 5px;
+  background: var(--ios-gray3);
+  border-radius: 3px;
+  margin: var(--ios-space-3) auto var(--ios-space-2);
+}
+
+/* Header */
+.ios-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 var(--ios-space-5) var(--ios-space-4);
+  border-bottom: 0.5px solid var(--ios-gray5);
+}
+
+.ios-modal__title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--ios-space-1) 0;
+  color: #000;
+}
+
+.ios-modal__subtitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ios-gray);
+  margin: 0;
+}
+
+/* Content */
+.ios-modal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ios-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ios-space-6);
+}
+
+.ios-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ios-space-4);
+}
+
+.ios-modal__section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ios-gray);
+  margin: 0;
+}
+
+/* Control Groups */
+.ios-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ios-space-2);
+}
+
+.ios-control-group__label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* Toggle Row */
+.ios-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ios-space-4);
+  background: var(--ios-gray6);
+  border-radius: var(--ios-radius);
+  cursor: pointer;
+}
+
+.ios-toggle-row__label {
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* Toggle Switch */
+.ios-toggle {
+  position: relative;
+  width: 51px;
+  height: 31px;
+  background: var(--ios-gray3);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  padding: 0;
+}
+
+.ios-toggle--on {
+  background: var(--ios-green);
+}
+
+.ios-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+}
+
+.ios-toggle--on .ios-toggle__thumb {
+  transform: translateX(20px);
+}
+
+/* Segmented Control */
+.ios-segmented {
+  display: flex;
+  background: var(--ios-gray6);
+  border-radius: var(--ios-radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.ios-segmented__option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ios-space-2);
+  padding: var(--ios-space-2) var(--ios-space-3);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--ios-font);
+  font-size: 15px;
+  font-weight: 500;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ios-segmented__option:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.ios-segmented__option--active {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ios-segmented__option .ios-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Stepper */
+.ios-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ios-space-4);
+  background: var(--ios-gray6);
+  border-radius: var(--ios-radius);
+}
+
+.ios-stepper__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ios-stepper__btn:hover {
+  background: var(--ios-gray6);
+}
+
+.ios-stepper__btn:active {
+  transform: scale(0.95);
+}
+
+.ios-stepper__btn .ios-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--ios-blue);
+}
+
+.ios-stepper__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ios-space-1);
+}
+
+.ios-stepper__number {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: #000;
+  font-variant-numeric: tabular-nums;
+}
+
+.ios-stepper__unit {
+  font-size: 24px;
+  font-weight: 300;
+  color: var(--ios-gray);
+}
+
+/* Warning */
+.ios-warning {
+  display: flex;
+  gap: var(--ios-space-3);
+  padding: var(--ios-space-4);
+  background: rgba(255, 149, 0, 0.1);
+  border: 1px solid rgba(255, 149, 0, 0.3);
+  border-radius: var(--ios-radius);
+}
+
+.ios-warning__icon {
+  width: 24px;
+  height: 24px;
+  color: var(--ios-orange);
+  flex-shrink: 0;
+}
+
+.ios-warning__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ios-orange);
+  margin: 0 0 var(--ios-space-1) 0;
+}
+
+.ios-warning__message {
+  font-size: 13px;
+  color: #000;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Accessory Grid */
+.ios-accessory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--ios-space-3);
+}
+
+.ios-accessory-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ios-space-2);
+  padding: var(--ios-space-4);
+  background: var(--ios-gray6);
+  border: 1px solid transparent;
+  border-radius: var(--ios-radius);
+  font-family: var(--ios-font);
+  font-size: 15px;
+  font-weight: 500;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ios-accessory-btn:hover {
+  background: var(--ios-gray5);
+}
+
+.ios-accessory-btn:active {
+  transform: scale(0.96);
+}
+
+.ios-accessory-btn--on {
+  background: var(--ios-yellow);
+  border-color: rgba(255, 204, 0, 0.3);
+}
+
+.ios-accessory-btn__icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2px;
+}
+
+.ios-accessory-btn--on .ios-accessory-btn__icon {
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.ios-accessory-btn__label {
+  text-align: center;
+  line-height: 1.3;
+}
+
+.ios-accessory-btn__pending {
+  position: absolute;
+  top: var(--ios-space-2);
+  right: var(--ios-space-2);
+  width: 6px;
+  height: 6px;
+  background: var(--ios-blue);
+  border-radius: 50%;
+  animation: ios-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ios-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Footer */
+.ios-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ios-space-3);
+  padding: var(--ios-space-4) var(--ios-space-5);
+  border-top: 0.5px solid var(--ios-gray5);
+  background: var(--ios-surface);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .ios-modal {
+    max-height: 95vh;
+  }
+
+  .ios-modal__content {
+    padding: var(--ios-space-4);
+  }
+
+  .ios-modal__header {
+    padding: 0 var(--ios-space-4) var(--ios-space-3);
+  }
+
+  .ios-modal__footer {
+    padding: var(--ios-space-3) var(--ios-space-4);
+  }
+
+  .ios-accessory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .ios-stepper__number {
+    font-size: 40px;
+  }
+
+  .ios-stepper__unit {
+    font-size: 20px;
+  }
+}

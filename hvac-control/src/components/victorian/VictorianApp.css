@@ -1,0 +1,323 @@
+/* Victorian Design - 1880s British Arts & Crafts */
+
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700;900&display=swap');
+
+:root {
+  /* Victorian Palette - Muted, dignified tones */
+  --victorian-cream: #F5F1E8;
+  --victorian-parchment: #E8E0D5;
+  --victorian-tan: #D4C4B0;
+  --victorian-brown: #8B7355;
+  --victorian-bronze: #6B5D4F;
+  --victorian-charcoal: #3A3431;
+  --victorian-ink: #1C1612;
+
+  /* Accent colors - Inspired by Victorian textiles */
+  --victorian-burgundy: #6B2737;
+  --victorian-forest: #2F4538;
+  --victorian-gold: #C9A961;
+  --victorian-rust: #A0563B;
+  --victorian-teal: #4A6D6D;
+
+  /* Semantic */
+  --victorian-heat: var(--victorian-rust);
+  --victorian-cool: var(--victorian-teal);
+  --victorian-light: var(--victorian-gold);
+
+  /* Typography - Period-appropriate serifs */
+  --victorian-font-display: 'Cinzel', serif;
+  --victorian-font-body: 'Libre Baskerville', serif;
+  --victorian-font-ornate: 'IM Fell English', serif;
+
+  /* Spacing - Based on classical proportions */
+  --victorian-s1: 4px;
+  --victorian-s2: 8px;
+  --victorian-s3: 12px;
+  --victorian-s4: 16px;
+  --victorian-s5: 24px;
+  --victorian-s6: 32px;
+  --victorian-s8: 48px;
+
+  /* Ornamental */
+  --victorian-border: 2px solid var(--victorian-bronze);
+  --victorian-border-ornate: 3px double var(--victorian-bronze);
+  --victorian-shadow: 0 4px 12px rgba(28, 22, 18, 0.15);
+}
+
+/* Base */
+.victorian-app {
+  min-height: 100vh;
+  background: var(--victorian-cream);
+  font-family: var(--victorian-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 115, 85, 0.02) 2px,
+      rgba(139, 115, 85, 0.02) 4px
+    );
+}
+
+/* Decorative corner flourishes */
+.victorian-app::before,
+.victorian-app::after {
+  content: '';
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  background-image: radial-gradient(circle at center, var(--victorian-bronze) 1px, transparent 1px);
+  background-size: 8px 8px;
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.victorian-app::before {
+  top: 0;
+  left: 0;
+  border-right: var(--victorian-border);
+  border-bottom: var(--victorian-border);
+}
+
+.victorian-app::after {
+  bottom: 0;
+  right: 0;
+  border-left: var(--victorian-border);
+  border-top: var(--victorian-border);
+}
+
+/* Header - Inspired by Victorian railway station signage */
+.victorian-header {
+  background: linear-gradient(180deg, var(--victorian-parchment) 0%, var(--victorian-cream) 100%);
+  border-bottom: var(--victorian-border-ornate);
+  padding: var(--victorian-s4) var(--victorian-s5);
+  position: relative;
+  box-shadow: inset 0 -1px 0 rgba(107, 39, 55, 0.1);
+}
+
+.victorian-header__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+/* Ornamental top bar */
+.victorian-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--victorian-gold) 50%,
+    transparent 100%
+  );
+}
+
+.victorian-header__title {
+  font-family: var(--victorian-font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--victorian-ink);
+  text-shadow: 1px 1px 0 rgba(201, 169, 97, 0.3);
+  position: relative;
+}
+
+/* Decorative underline */
+.victorian-header__title::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--victorian-gold) 0px,
+    var(--victorian-gold) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.victorian-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--victorian-s3);
+}
+
+/* Navigation - Victorian book chapter style */
+.victorian-nav {
+  background: var(--victorian-parchment);
+  border-bottom: var(--victorian-border);
+  padding: 0 var(--victorian-s5) var(--victorian-s3);
+}
+
+.victorian-nav__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: var(--victorian-s4);
+  border-bottom: 1px solid var(--victorian-tan);
+  padding-bottom: var(--victorian-s3);
+}
+
+.victorian-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-family: var(--victorian-font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--victorian-bronze);
+  padding: var(--victorian-s2) var(--victorian-s3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.victorian-tab::before {
+  content: '§';
+  position: absolute;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: var(--victorian-gold);
+}
+
+.victorian-tab:hover {
+  color: var(--victorian-burgundy);
+}
+
+.victorian-tab:hover::before {
+  opacity: 1;
+}
+
+.victorian-tab--active {
+  color: var(--victorian-ink);
+  border-bottom-color: var(--victorian-gold);
+}
+
+.victorian-tab--active::before {
+  opacity: 1;
+}
+
+/* Buttons - Victorian pressed metal style */
+.victorian-btn {
+  font-family: var(--victorian-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: var(--victorian-s2) var(--victorian-s4);
+  background: linear-gradient(180deg, var(--victorian-parchment) 0%, var(--victorian-tan) 100%);
+  border: var(--victorian-border);
+  color: var(--victorian-ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(28, 22, 18, 0.1);
+  position: relative;
+}
+
+.victorian-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(107, 93, 79, 0.03) 2px,
+    rgba(107, 93, 79, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+.victorian-btn:hover {
+  background: linear-gradient(180deg, var(--victorian-tan) 0%, var(--victorian-parchment) 100%);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 3px 6px rgba(28, 22, 18, 0.15);
+}
+
+.victorian-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 2px 4px rgba(28, 22, 18, 0.2),
+    0 1px 2px rgba(28, 22, 18, 0.1);
+}
+
+.victorian-btn--primary {
+  background: linear-gradient(180deg, var(--victorian-gold) 0%, var(--victorian-brown) 100%);
+  border-color: var(--victorian-bronze);
+  color: var(--victorian-cream);
+  text-shadow: 0 1px 2px rgba(28, 22, 18, 0.3);
+}
+
+.victorian-btn--primary:hover {
+  background: linear-gradient(180deg, #D4B670 0%, var(--victorian-gold) 100%);
+}
+
+.victorian-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2px;
+}
+
+.victorian-icon--spinning {
+  animation: victorian-spin 2s linear infinite;
+}
+
+@keyframes victorian-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Main Content */
+.victorian-main {
+  padding: var(--victorian-s5);
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .victorian-header__title {
+    font-size: 24px;
+  }
+
+  .victorian-header,
+  .victorian-nav {
+    padding-left: var(--victorian-s4);
+    padding-right: var(--victorian-s4);
+  }
+
+  .victorian-main {
+    padding: var(--victorian-s4);
+  }
+
+  .victorian-nav__inner {
+    gap: var(--victorian-s3);
+  }
+}
