@@ -110,7 +110,7 @@ export const ZONES = [
     ]
   },
 
-  // Row 7: NB's Office (3rd floor, no "3fl" prefix)
+  // Row 7: NB's Office (3rd floor, no "3fl" prefix )
   {
     id: 'nbs_office',
     name: 'Office',
