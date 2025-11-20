@@ -2,14 +2,15 @@
   "name": "Home Climate Control",
   "short_name": "Home Control",
   "description": "HVAC and lighting control dashboard",
-  "start_url": "/",
+  "start_url": "/experiments/hvac-control/",
+  "scope": "/experiments/hvac-control/",
   "display": "standalone",
   "background_color": "#f5f5f0",
   "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/apple-touch-icon.svg",
+      "src": "/experiments/hvac-control/apple-touch-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
