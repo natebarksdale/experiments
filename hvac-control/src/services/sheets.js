@@ -2,6 +2,7 @@
 // Sheet ID: 1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo
 
 import { getAccessToken } from './auth';
+import { fetchZoneTemperatures, isSmartThingsAvailable } from './smartthings';
 
 const SHEET_ID = '1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo';
 const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || '';
@@ -472,13 +473,16 @@ async function updateRange(range, values) {
 
 /**
  * Fetch current panel status
- * Reads from both Control sheet (overrides) and Panel sheet (defaults)
+ * Reads temperatures from SmartThings API (source of truth)
+ * Reads control settings from Google Sheets (Control sheet overrides and Panel sheet defaults)
  */
 export async function fetchPanelStatus() {
   try {
+    // Fetch SmartThings temperatures in parallel with Google Sheets data
     const [
+      smartthingsTemps,
       names,
-      temps,
+      sheetsTemps,
       minutesAgo,
       // Control sheet - override values
       controlOverride,
@@ -490,8 +494,9 @@ export async function fetchPanelStatus() {
       defaultMode,
       defaultTarget,
     ] = await Promise.all([
+      isSmartThingsAvailable() ? fetchZoneTemperatures() : Promise.resolve(null),
       fetchRange('Panel!C2:C9'),
-      fetchRange('Panel!F2:F9'),
+      fetchRange('Panel!F2:F9'),  // Fallback if SmartThings unavailable
       fetchRange('Panel!E2:E9'),
       // Control sheet columns
       fetchRange('Control!B1:B8'),  // Override flag (TRUE/FALSE)
@@ -538,10 +543,23 @@ export async function fetchPanelStatus() {
         };
       }
 
+      // Get temperature from SmartThings (source of truth) with fallback to Google Sheets
+      let temperature = null;
+      let temperatureSource = 'sheets'; // Track data source for debugging
+
+      if (smartthingsTemps && smartthingsTemps[zone.id]) {
+        temperature = smartthingsTemps[zone.id].temperature;
+        temperatureSource = 'smartthings';
+      } else {
+        // Fallback to Google Sheets temperature
+        temperature = parseFloat(sheetsTemps[index]?.[0]) || null;
+      }
+
       return {
         ...zone,
         unitName: names[index]?.[0] || zone.name,
-        temperature: parseFloat(temps[index]?.[0]) || null,
+        temperature: temperature,
+        temperatureSource: temperatureSource, // Add source tracking
         minutesSinceUpdate: parseInt(minutesAgo[index]?.[0]) || null,
         preferredState: currentState,
         defaultState: defaultState,
