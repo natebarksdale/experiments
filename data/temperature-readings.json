@@ -15,8 +15,8 @@
       "deviceLabel": "NB’s Office"
     }
   ],
-  "lastUpdated": "2025-11-21T20:50:15.002Z",
-  "totalReadings": 32,
+  "lastUpdated": "2025-11-21T21:02:36.455Z",
+  "totalReadings": 40,
   "devices": {
     "8021826e-78ca-4f3d-bd33-bdac1cadd3f2": {
       "location": "Original Thermostat",
@@ -41,6 +41,11 @@
           "temperature": 66,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:15.539Z"
+        },
+        {
+          "temperature": 66,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:36.894Z"
         }
       ]
     },
@@ -67,6 +72,11 @@
           "temperature": 68,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:15.803Z"
+        },
+        {
+          "temperature": 68,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.169Z"
         }
       ]
     },
@@ -93,6 +103,11 @@
           "temperature": 67,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:16.068Z"
+        },
+        {
+          "temperature": 67,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.320Z"
         }
       ]
     },
@@ -119,6 +134,11 @@
           "temperature": 63,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:16.337Z"
+        },
+        {
+          "temperature": 63,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.409Z"
         }
       ]
     },
@@ -145,6 +165,11 @@
           "temperature": 67,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:16.618Z"
+        },
+        {
+          "temperature": 67,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.532Z"
         }
       ]
     },
@@ -171,6 +196,11 @@
           "temperature": 68,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:16.873Z"
+        },
+        {
+          "temperature": 69,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.684Z"
         }
       ]
     },
@@ -197,6 +227,11 @@
           "temperature": 69,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:17.125Z"
+        },
+        {
+          "temperature": 68,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.807Z"
         }
       ]
     },
@@ -223,6 +258,11 @@
           "temperature": 73,
           "unit": "F",
           "timestamp": "2025-11-21T20:50:17.390Z"
+        },
+        {
+          "temperature": 73,
+          "unit": "F",
+          "timestamp": "2025-11-21T21:02:37.899Z"
         }
       ]
     }
