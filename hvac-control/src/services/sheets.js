@@ -10,6 +10,18 @@ const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || '';
 // Using gapi for Google Sheets API
 const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
 
+// Map zone IDs to SmartThings device IDs for sparkline historical data
+export const ZONE_DEVICE_MAP = {
+  'apartment': '8051fd90-ab24-467c-8746-3dadbce02252',      // Basement
+  'jrs_office': 'c44c9f12-1029-43c0-af5f-a5ff572d37c7',    // JR's Office
+  'main_kitchen': 'dd6b54be-a667-4acc-a112-d89c9923c29d',  // Main Kitchen
+  'kids_bedroom': '8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd',  // Kids Bedroom
+  'front_hall': '999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147',    // Front Hall
+  'primary_bedroom': '9ced4ff7-4376-47c8-b882-5724bfb14306', // Primary Bedroom
+  'nbs_office': '8021826e-78ca-4f3d-bd33-bdac1cadd3f2',    // NB's Office
+  'denn': '87f9fbe2-f6b7-4877-9486-01b896a0acb5',          // Den
+};
+
 // Zone configuration matching the Control sheet order (rows 1-8)
 // Loop 1: Primary Bedroom, NBs Office, Denn, Front hall
 // Loop 2: Basement, JRs Office, Main kitchen, Kids Bedroom
