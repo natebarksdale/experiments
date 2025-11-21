@@ -1,10 +1,13 @@
 // SmartThings API integration
 // Direct integration with SmartThings for real-time thermostat data
+// Control operations are proxied through Cloudflare Worker for security
+
+import { isProxyAvailable, proxySmartThings } from './proxy';
 
 const SMARTTHINGS_API_BASE = 'https://api.smartthings.com/v1';
 
-// Use environment variable for token (not recommended for client-side in production)
-// Better approach: proxy through your own backend
+// Use environment variable for token (only for read operations)
+// Write operations go through proxy to keep token secure
 const SMARTTHINGS_TOKEN = import.meta.env.VITE_SMARTTHINGS_TOKEN || '';
 
 // Device mapping from sheets.js ZONES configuration
@@ -122,30 +125,45 @@ export function isSmartThingsAvailable() {
 
 /**
  * Execute a command on a SmartThings device
+ * Routes through proxy if available for security
  */
 async function executeCommand(deviceId, commands) {
-  if (!SMARTTHINGS_TOKEN) {
-    throw new Error('SmartThings token not configured');
+  const endpoint = `/devices/${deviceId}/commands`;
+  const body = { commands };
+
+  // Use proxy if available (secure), otherwise direct API (dev mode)
+  if (isProxyAvailable()) {
+    const response = await proxySmartThings(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+
+    return await response.json();
+  } else {
+    // Fallback to direct API (requires token in environment)
+    if (!SMARTTHINGS_TOKEN) {
+      throw new Error('SmartThings token not configured and proxy not available');
+    }
+
+    const url = `${SMARTTHINGS_API_BASE}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SMARTTHINGS_TOKEN}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`SmartThings command error: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
   }
-
-  const url = `${SMARTTHINGS_API_BASE}/devices/${deviceId}/commands`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${SMARTTHINGS_TOKEN}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ commands })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`SmartThings command error: ${response.status} - ${errorText}`);
-  }
-
-  return await response.json();
 }
 
 /**
