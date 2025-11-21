@@ -105,6 +105,7 @@ jobs:
           cd hvac-control
           npm run build
         env:
+          VITE_SMARTTHINGS_TOKEN: ${{ secrets.VITE_SMARTTHINGS_TOKEN }}
           VITE_GOOGLE_SHEETS_API_KEY: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_IFTTT_WEBHOOK_KEY: ${{ secrets.VITE_IFTTT_WEBHOOK_KEY }}

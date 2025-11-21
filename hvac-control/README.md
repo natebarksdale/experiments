@@ -1,13 +1,14 @@
 # Home Climate Control
 
-A beautiful, analog-inspired web interface for managing your home's HVAC system via Google Sheets.
+A beautiful, analog-inspired web interface for managing your home's HVAC system with real-time SmartThings integration.
 
 ## Features
 
 - **Dashboard View**: Visual representation of your home's layout with all HVAC zones
-- **Real-time Monitoring**: Live temperature readings and system status
+- **Real-time Monitoring**: Live temperature readings directly from SmartThings API
 - **Control Panel**: Adjust power and mode settings for each zone
 - **History Log**: View historical HVAC activity across all zones
+- **Dual Data Sources**: SmartThings API for temperatures (source of truth), Google Sheets for control settings
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Setup
@@ -18,7 +19,22 @@ A beautiful, analog-inspired web interface for managing your home's HVAC system 
 npm install
 ```
 
-### 2. Configure Google Cloud Project & OAuth
+### 2. Configure SmartThings API (PRIMARY - for temperature readings)
+
+#### A. Get SmartThings Personal Access Token
+
+1. Go to [SmartThings Tokens](https://account.smartthings.com/tokens)
+2. Click **Generate new token**
+3. Give it a name (e.g., "HVAC Control Dashboard")
+4. Select these permissions:
+   - ✅ **r:devices:\*** - List all devices
+   - ✅ **r:devices:\*:status** - See device status
+   - ✅ **r:locations:\*** - Read locations (optional but recommended)
+5. Copy the token (you won't be able to see it again!)
+
+This token is used to fetch **real-time temperature readings** directly from your SmartThings thermostats.
+
+### 3. Configure Google Cloud Project & OAuth (for control settings)
 
 #### A. Create Google Cloud Project
 
@@ -65,8 +81,9 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add all three credentials:
+Edit `.env` and add all four credentials:
 ```
+VITE_SMARTTHINGS_TOKEN=your_smartthings_token_here
 VITE_GOOGLE_SHEETS_API_KEY=your_api_key_here
 VITE_GOOGLE_CLIENT_ID=your_oauth_client_id.apps.googleusercontent.com
 VITE_IFTTT_WEBHOOK_KEY=your_ifttt_key_here
@@ -113,7 +130,8 @@ See [GITHUB_PAGES_SETUP.md](./GITHUB_PAGES_SETUP.md) for detailed setup instruct
 
 Quick summary:
 1. Enable GitHub Pages in repository settings (Source: "GitHub Actions")
-2. Add three secrets to GitHub repository settings:
+2. Add four secrets to GitHub repository settings:
+   - `VITE_SMARTTHINGS_TOKEN`
    - `VITE_GOOGLE_SHEETS_API_KEY`
    - `VITE_GOOGLE_CLIENT_ID`
    - `VITE_IFTTT_WEBHOOK_KEY`
@@ -142,13 +160,29 @@ npm run preview
 
 **Note:** Built files contain embedded environment variables from `.env` and should never be committed to git.
 
-## Google Sheets Structure
+## Data Architecture
+
+The app uses a **dual-source architecture** for reliability:
+
+### Primary Data Sources
+
+1. **SmartThings API** (Source of truth for temperatures)
+   - Real-time temperature readings from thermostats
+   - Direct API access with <2 second latency
+   - Automatic fallback to Google Sheets if unavailable
+
+2. **Google Sheets** (Control settings and history)
+   - Control overrides and default settings
+   - Historical log data
+   - Fallback temperature data
+
+### Google Sheets Structure
 
 The app expects the following sheet structure:
 
 ### Panel Sheet
 - `C2:C9` - Unit names
-- `F2:F9` - Current temperatures
+- `F2:F9` - Fallback temperature data (used if SmartThings unavailable)
 - `E2:E9` - Minutes since last update
 - `A2:A9` - Preferred state (format: "On-Heat-67a")
 

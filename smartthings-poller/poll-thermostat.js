@@ -18,6 +18,44 @@ const GOOGLE_SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY;
 const SHEET_ID = '1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo';
 const SHEET_RANGE = '1819 Control Panel Panel!A57:H57';
 
+// Light configuration - maps zones to their associated light rows in Google Sheets
+// Based on ZONES configuration from hvac-control/src/services/sheets.js
+const ZONE_LIGHTS = {
+  'Basement': [
+    { name: 'Kitchen', row: 13 },
+    { name: 'Bathroom', row: 8 },
+    { name: 'Studio Ceiling', row: 7 },
+    { name: 'Studio Floor Lamp', row: 9 },
+    { name: 'Studio Desk Lamp', row: 10 }
+  ],
+  'Jrs Office': [
+    { name: 'Main Lights', row: 29 }
+  ],
+  'Main Kitchen': [
+    { name: 'Main Lights', row: 26 },
+    { name: 'Island Pendants', row: 25 },
+    { name: 'Under Cabinet', row: 27 }
+  ],
+  'Kids Bedroom': [
+    { name: 'Main Lights', row: 3 }
+  ],
+  'Front Hall': [
+    { name: 'Entryway', row: 17 },
+    { name: 'Foyer Lights', row: 20 },
+    { name: 'Chandelier', row: 19 }
+  ],
+  'Primary Bedroom': [
+    { name: 'Floor Lamp', row: 5 },
+    { name: 'Ceiling', row: 6 }
+  ],
+  'NBs Office': [
+    { name: 'Main Lights', row: 30 }
+  ],
+  'Denn': [
+    { name: 'Main Lights', row: 15 }
+  ]
+};
+
 // Your thermostat devices - add or remove devices as needed
 const DEVICES = [
   { id: '8021826e-78ca-4f3d-bd33-bdac1cadd3f2', location: 'Original Thermostat', sheetName: 'NBs Office' },
@@ -85,21 +123,65 @@ async function getDeviceStatus(deviceId) {
 }
 
 /**
- * Extract temperature reading from device status
+ * Extract comprehensive thermostat data from device status
  */
-function extractTemperature(status) {
-  // SmartThings thermostats typically have a 'temperatureMeasurement' capability
-  const tempCapability = status.components?.main?.temperatureMeasurement;
+function extractThermostatData(status) {
+  const main = status.components?.main;
 
+  if (!main) {
+    return null;
+  }
+
+  const data = {
+    timestamp: new Date().toISOString()
+  };
+
+  // Temperature
+  const tempCapability = main.temperatureMeasurement;
   if (tempCapability && tempCapability.temperature) {
-    return {
+    data.temperature = {
       value: tempCapability.temperature.value,
-      unit: tempCapability.temperature.unit,
-      timestamp: new Date().toISOString()
+      unit: tempCapability.temperature.unit
     };
   }
 
-  return null;
+  // Humidity
+  const humidityCapability = main.relativeHumidityMeasurement;
+  if (humidityCapability && humidityCapability.humidity) {
+    data.humidity = humidityCapability.humidity.value;
+  }
+
+  // Thermostat mode (off, heat, cool, auto, emergency heat)
+  const modeCapability = main.thermostatMode;
+  if (modeCapability && modeCapability.thermostatMode) {
+    data.mode = modeCapability.thermostatMode.value;
+  }
+
+  // Operating state (idle, heating, cooling, pending heat, pending cool, vent economizer, fan only)
+  const operatingStateCapability = main.thermostatOperatingState;
+  if (operatingStateCapability && operatingStateCapability.thermostatOperatingState) {
+    data.operatingState = operatingStateCapability.thermostatOperatingState.value;
+  }
+
+  // Heating setpoint
+  const heatingSetpoint = main.thermostatHeatingSetpoint;
+  if (heatingSetpoint && heatingSetpoint.heatingSetpoint) {
+    data.heatingSetpoint = heatingSetpoint.heatingSetpoint.value;
+  }
+
+  // Cooling setpoint
+  const coolingSetpoint = main.thermostatCoolingSetpoint;
+  if (coolingSetpoint && coolingSetpoint.coolingSetpoint) {
+    data.coolingSetpoint = coolingSetpoint.coolingSetpoint.value;
+  }
+
+  // Fan mode
+  const fanMode = main.thermostatFanMode;
+  if (fanMode && fanMode.thermostatFanMode) {
+    data.fanMode = fanMode.thermostatFanMode.value;
+  }
+
+  return data;
 }
 
 /**
@@ -127,6 +209,73 @@ async function saveReadings(data) {
   await fs.mkdir(dataDir, { recursive: true });
 
   await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+/**
+ * Fetch light status from Google Sheets
+ * Reads from Lights sheet column D (On/Off status)
+ */
+async function fetchLightStatus() {
+  if (!GOOGLE_SHEETS_API_KEY) {
+    return {};
+  }
+
+  try {
+    // Fetch light status from Lights!D2:D40 (covers all lights)
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Lights!D2:D40?key=${GOOGLE_SHEETS_API_KEY}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.error(`Error fetching light status: ${response.status}`);
+      return {};
+    }
+
+    const data = await response.json();
+    const values = data.values || [];
+
+    // Build map of row number to status (on/off)
+    const lightStatus = {};
+    values.forEach((row, index) => {
+      const rowNum = index + 2; // Rows start at 2
+      const status = row[0]?.toLowerCase() === 'on' ? 'on' : 'off';
+      lightStatus[rowNum] = status;
+    });
+
+    return lightStatus;
+  } catch (error) {
+    console.error('Error fetching light status:', error.message);
+    return {};
+  }
+}
+
+/**
+ * Get light status for a specific zone
+ * @param {string} location - Zone location name
+ * @param {Object} lightStatus - Map of row numbers to status
+ * @returns {Object} Light status summary for the zone
+ */
+function getZoneLightStatus(location, lightStatus) {
+  const lights = ZONE_LIGHTS[location];
+  if (!lights || lights.length === 0) {
+    return { anyOn: false, onCount: 0, totalCount: 0 };
+  }
+
+  let onCount = 0;
+  lights.forEach(light => {
+    if (lightStatus[light.row] === 'on') {
+      onCount++;
+    }
+  });
+
+  return {
+    anyOn: onCount > 0,
+    onCount: onCount,
+    totalCount: lights.length,
+    lights: lights.map(light => ({
+      name: light.name,
+      status: lightStatus[light.row] || 'off'
+    }))
+  };
 }
 
 /**
@@ -194,6 +343,13 @@ async function poll() {
     console.log(`Devices to poll: ${DEVICES.length}`);
     console.log('');
 
+    // Fetch light status from Google Sheets
+    console.log('💡 Fetching light status...');
+    const lightStatus = await fetchLightStatus();
+    const lightCount = Object.keys(lightStatus).length;
+    console.log(`   Found ${lightCount} lights`);
+    console.log('');
+
     // Load existing readings
     const data = await loadReadings();
 
@@ -217,22 +373,31 @@ async function poll() {
         // Get device status
         const { device, status } = await getDeviceStatus(id);
 
-        // Extract temperature
-        const temperature = extractTemperature(status);
+        // Extract comprehensive thermostat data
+        const thermostatData = extractThermostatData(status);
 
-        if (!temperature) {
-          console.log(`   ⚠️  Could not extract temperature`);
+        if (!thermostatData || !thermostatData.temperature) {
+          console.log(`   ⚠️  Could not extract thermostat data`);
           failureCount++;
           continue;
         }
 
-        console.log(`   ✅ ${temperature.value}°${temperature.unit}`);
+        // Get light status for this zone
+        const zoneLights = getZoneLightStatus(location, lightStatus);
+
+        // Log summary
+        const tempStr = `${thermostatData.temperature.value}°${thermostatData.temperature.unit}`;
+        const humidityStr = thermostatData.humidity ? ` ${thermostatData.humidity}%` : '';
+        const stateStr = thermostatData.mode ? ` [${thermostatData.mode}/${thermostatData.operatingState || 'idle'}]` : '';
+        const lightsStr = zoneLights.anyOn ? ` 💡${zoneLights.onCount}/${zoneLights.totalCount}` : '';
+        console.log(`   ✅ ${tempStr}${humidityStr}${stateStr}${lightsStr}`);
 
         // Initialize device data if it doesn't exist
         if (!data.devices[id]) {
           data.devices[id] = {
             location: location,
             deviceLabel: device.label || device.name,
+            sheetName: deviceConfig.sheetName,
             readings: []
           };
         }
@@ -240,12 +405,12 @@ async function poll() {
         // Update device info (in case it changed)
         data.devices[id].location = location;
         data.devices[id].deviceLabel = device.label || device.name;
+        data.devices[id].sheetName = deviceConfig.sheetName;
 
-        // Add new reading
+        // Add new reading with all available data (including lights)
         const reading = {
-          temperature: temperature.value,
-          unit: temperature.unit,
-          timestamp: temperature.timestamp
+          ...thermostatData,
+          lights: zoneLights
         };
 
         data.devices[id].readings.push(reading);
@@ -258,8 +423,11 @@ async function poll() {
         // Track for summary
         readings.push({
           location,
-          temperature: temperature.value,
-          unit: temperature.unit,
+          temperature: thermostatData.temperature.value,
+          unit: thermostatData.temperature.unit,
+          humidity: thermostatData.humidity,
+          mode: thermostatData.mode,
+          operatingState: thermostatData.operatingState,
           sheetName: deviceConfig.sheetName
         });
 
