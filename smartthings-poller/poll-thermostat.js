@@ -13,16 +13,34 @@ const SMARTTHINGS_API_BASE = 'https://api.smartthings.com/v1';
 const TOKEN = process.env.SMARTTHINGS_TOKEN;
 const DATA_FILE = path.join(__dirname, '../data/temperature-readings.json');
 
+// Google Sheets configuration
+const GOOGLE_SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY;
+const SHEET_ID = '1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo';
+const SHEET_RANGE = '1819 Control Panel Panel!A57:H57';
+
 // Your thermostat devices - add or remove devices as needed
 const DEVICES = [
-  { id: '8021826e-78ca-4f3d-bd33-bdac1cadd3f2', location: 'Original Thermostat' },
-  { id: '8051fd90-ab24-467c-8746-3dadbce02252', location: 'Basement' },
-  { id: '87f9fbe2-f6b7-4877-9486-01b896a0acb5', location: 'Denn' },
-  { id: '999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147', location: 'Front Hall' },
-  { id: 'c44c9f12-1029-43c0-af5f-a5ff572d37c7', location: 'Jrs Office' },
-  { id: '8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd', location: 'Kids Bedroom' },
-  { id: 'dd6b54be-a667-4acc-a112-d89c9923c29d', location: 'Main Kitchen' },
-  { id: '9ced4ff7-4376-47c8-b882-5724bfb14306', location: 'Primary Bedroom' }
+  { id: '8021826e-78ca-4f3d-bd33-bdac1cadd3f2', location: 'Original Thermostat', sheetName: 'NBs Office' },
+  { id: '8051fd90-ab24-467c-8746-3dadbce02252', location: 'Basement', sheetName: 'Basement' },
+  { id: '87f9fbe2-f6b7-4877-9486-01b896a0acb5', location: 'Denn', sheetName: 'Denn' },
+  { id: '999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147', location: 'Front Hall', sheetName: 'Front hall' },
+  { id: 'c44c9f12-1029-43c0-af5f-a5ff572d37c7', location: 'Jrs Office', sheetName: 'JRs office' },
+  { id: '8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd', location: 'Kids Bedroom', sheetName: 'Kids Bedroom' },
+  { id: 'dd6b54be-a667-4acc-a112-d89c9923c29d', location: 'Main Kitchen', sheetName: 'Main kitchen' },
+  { id: '9ced4ff7-4376-47c8-b882-5724bfb14306', location: 'Primary Bedroom', sheetName: 'Primary Bedroom' }
+];
+
+// Order for Google Sheets update (A57:H57)
+// Basement, JRs office, Main kitchen, Kids Bedroom, Front hall, Primary Bedroom, NB's Office, Denn
+const SHEET_ORDER = [
+  'Basement',
+  'JRs office',
+  'Main kitchen',
+  'Kids Bedroom',
+  'Front hall',
+  'Primary Bedroom',
+  'NBs Office',
+  'Denn'
 ];
 
 /**
@@ -112,6 +130,57 @@ async function saveReadings(data) {
 }
 
 /**
+ * Update Google Sheets with current temperatures
+ * @param {Object} temperatureMap - Map of sheetName to temperature value
+ */
+async function updateGoogleSheet(temperatureMap) {
+  if (!GOOGLE_SHEETS_API_KEY) {
+    console.log('⏭️  Skipping Google Sheets update (no API key configured)');
+    return { success: false, reason: 'no_api_key' };
+  }
+
+  try {
+    console.log('\n📊 Updating Google Sheets...');
+
+    // Build row of temperatures in the correct order
+    const values = SHEET_ORDER.map(sheetName => {
+      const temp = temperatureMap[sheetName];
+      return temp !== undefined ? temp : ''; // Empty string if no data
+    });
+
+    console.log(`   Sheet: ${SHEET_ID}`);
+    console.log(`   Range: ${SHEET_RANGE}`);
+    console.log(`   Values: [${values.join(', ')}]`);
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}?valueInputOption=RAW&key=${GOOGLE_SHEETS_API_KEY}`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        range: SHEET_RANGE,
+        values: [values], // Single row
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Google Sheets API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log(`   ✅ Updated ${result.updatedCells || 0} cells`);
+
+    return { success: true, updatedCells: result.updatedCells };
+  } catch (error) {
+    console.error('   ❌ Error updating Google Sheets:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Main polling function
  */
 async function poll() {
@@ -190,7 +259,8 @@ async function poll() {
         readings.push({
           location,
           temperature: temperature.value,
-          unit: temperature.unit
+          unit: temperature.unit,
+          sheetName: deviceConfig.sheetName
         });
 
         successCount++;
@@ -199,6 +269,18 @@ async function poll() {
         console.log(`   ❌ Error: ${error.message}`);
         failureCount++;
       }
+    }
+
+    // Update Google Sheets with current temperatures
+    if (readings.length > 0) {
+      const temperatureMap = {};
+      readings.forEach(r => {
+        if (r.sheetName) {
+          temperatureMap[r.sheetName] = r.temperature;
+        }
+      });
+
+      await updateGoogleSheet(temperatureMap);
     }
 
     console.log('');
