@@ -8,6 +8,7 @@ This directory contains a script that polls the SmartThings API to retrieve temp
    - Connects to the SmartThings API using a Personal Access Token
    - Queries 8 thermostats simultaneously for current temperatures
    - Stores readings in `../data/temperature-readings.json` with timestamps, organized by device
+   - Updates Google Sheets control panel (`1819 Control Panel Panel!A57:H57`) with current temperatures
    - Keeps the last 1000 readings per device to prevent unlimited growth
 
 2. **GitHub Action** - Automated workflow (`.github/workflows/poll-thermostat.yml`) that:
@@ -30,12 +31,15 @@ Optional but recommended:
 
 **Important**: Make sure to select these specific permissions when creating the token. A token without the correct permissions will result in "Access denied" errors.
 
-### 2. Add GitHub Secret
+### 2. Add GitHub Secrets
 
 In your GitHub repository:
 1. Go to **Settings** → **Secrets and variables** → **Actions**
-2. Create a new secret named `SMARTTHINGS_TOKEN`
-3. Paste your SmartThings token as the value
+2. Create these secrets:
+   - **`SMARTTHINGS_TOKEN`** - Your SmartThings Personal Access Token
+   - **`VITE_GOOGLE_SHEETS_API_KEY`** - Your Google Sheets API key (for updating the control panel)
+
+**Note**: The Google Sheets API key should have permission to edit the spreadsheet `1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo`. If you don't have this secret set, the script will still work but skip the Google Sheets update.
 
 ### 3. Configure Devices (optional)
 
@@ -124,6 +128,23 @@ Temperature readings are stored in `data/temperature-readings.json`, organized b
 ```
 
 Each device stores up to 1000 historical readings.
+
+## Google Sheets Integration
+
+The poller automatically updates your Google Sheets control panel at `1819 Control Panel Panel!A57:H57` with the latest temperatures in this order:
+
+| Column | Location |
+|--------|----------|
+| A57 | Basement |
+| B57 | JRs office |
+| C57 | Main kitchen |
+| D57 | Kids Bedroom |
+| E57 | Front hall |
+| F57 | Primary Bedroom |
+| G57 | NB's Office |
+| H57 | Denn |
+
+The update happens after polling all devices and before committing the data file. If the Google Sheets API key is not configured, this step is skipped and only the local data file is updated.
 
 ## Schedule
 

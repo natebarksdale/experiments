@@ -30,6 +30,7 @@ jobs:
           node poll-thermostat.js
         env:
           SMARTTHINGS_TOKEN: ${{ secrets.SMARTTHINGS_TOKEN }}
+          GOOGLE_SHEETS_API_KEY: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY }}
 
       - name: Commit and push temperature data
         run: |
