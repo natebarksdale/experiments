@@ -1,0 +1,14 @@
+{
+  "name": "smartthings-poller",
+  "version": "1.0.0",
+  "description": "Poll SmartThings thermostat for temperature readings",
+  "type": "commonjs",
+  "main": "poll-thermostat.js",
+  "scripts": {
+    "poll": "node poll-thermostat.js",
+    "test": "node test-token.js"
+  },
+  "keywords": ["smartthings", "thermostat", "polling"],
+  "author": "",
+  "license": "MIT"
+}
