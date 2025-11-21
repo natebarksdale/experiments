@@ -18,6 +18,11 @@ const GOOGLE_SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY;
 const SHEET_ID = '1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo';
 const SHEET_RANGE = '1819 Control Panel Panel!A57:H57';
 
+// Weather API configuration
+const WEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const ZIP_CODE = '20010';
+const COUNTRY_CODE = 'US';
+
 // Light configuration - maps zones to their associated light rows in Google Sheets
 // Based on ZONES configuration from hvac-control/src/services/sheets.js
 const ZONE_LIGHTS = {
@@ -279,6 +284,79 @@ function getZoneLightStatus(location, lightStatus) {
 }
 
 /**
+ * Fetch current weather data from OpenWeatherMap API
+ */
+async function fetchWeatherData() {
+  if (!WEATHER_API_KEY) {
+    console.log('⚠️  OpenWeatherMap API key not configured - skipping weather data');
+    return null;
+  }
+
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?zip=${ZIP_CODE},${COUNTRY_CODE}&appid=${WEATHER_API_KEY}&units=imperial`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.error(`Weather API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    return {
+      timestamp: new Date().toISOString(),
+      temperature: {
+        value: Math.round(data.main.temp * 10) / 10, // Round to 1 decimal
+        unit: 'F'
+      },
+      humidity: data.main.humidity,
+      feelsLike: Math.round(data.main.feels_like * 10) / 10,
+      pressure: data.main.pressure,
+      description: data.weather[0]?.description || '',
+      windSpeed: data.wind?.speed || 0,
+      cloudiness: data.clouds?.all || 0,
+      location: {
+        name: data.name,
+        zipCode: ZIP_CODE
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching weather data:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Calculate rolling average from weather history
+ * @param {Array} weatherHistory - Array of weather readings
+ * @param {number} hours - Number of hours to average over
+ * @returns {number|null} Average temperature or null
+ */
+function calculateRollingAverage(weatherHistory, hours) {
+  if (!weatherHistory || weatherHistory.length === 0) {
+    return null;
+  }
+
+  const now = new Date();
+  const cutoff = new Date(now - hours * 60 * 60 * 1000);
+
+  const relevantReadings = weatherHistory.filter(reading => {
+    const readingTime = new Date(reading.timestamp);
+    return readingTime >= cutoff;
+  });
+
+  if (relevantReadings.length === 0) {
+    return null;
+  }
+
+  const sum = relevantReadings.reduce((acc, reading) => {
+    return acc + (reading.temperature?.value || 0);
+  }, 0);
+
+  return Math.round((sum / relevantReadings.length) * 10) / 10;
+}
+
+/**
  * Update Google Sheets with current temperatures
  * @param {Object} temperatureMap - Map of sheetName to temperature value
  */
@@ -350,12 +428,32 @@ async function poll() {
     console.log(`   Found ${lightCount} lights`);
     console.log('');
 
+    // Fetch exterior weather data
+    console.log('🌤️  Fetching weather data...');
+    const weatherData = await fetchWeatherData();
+    if (weatherData) {
+      console.log(`   ${weatherData.temperature.value}°${weatherData.temperature.unit}, ${weatherData.humidity}% humidity`);
+      console.log(`   ${weatherData.description}`);
+    }
+    console.log('');
+
     // Load existing readings
     const data = await loadReadings();
 
     // Ensure devices object exists
     if (!data.devices) {
       data.devices = {};
+    }
+
+    // Ensure weather object exists
+    if (!data.weather) {
+      data.weather = {
+        location: {
+          zipCode: ZIP_CODE,
+          name: weatherData?.location?.name || 'Washington, DC'
+        },
+        readings: []
+      };
     }
 
     const currentTimestamp = new Date().toISOString();
@@ -437,6 +535,31 @@ async function poll() {
         console.log(`   ❌ Error: ${error.message}`);
         failureCount++;
       }
+    }
+
+    // Add weather reading to history and calculate rolling averages
+    if (weatherData) {
+      data.weather.readings.push(weatherData);
+
+      // Keep only last 1000 weather readings
+      if (data.weather.readings.length > 1000) {
+        data.weather.readings = data.weather.readings.slice(-1000);
+      }
+
+      // Calculate rolling averages
+      data.weather.average24hr = calculateRollingAverage(data.weather.readings, 24);
+      data.weather.average5day = calculateRollingAverage(data.weather.readings, 120); // 5 days = 120 hours
+
+      console.log('🌤️  Weather tracking:');
+      console.log(`   Current: ${weatherData.temperature.value}°${weatherData.temperature.unit}`);
+      if (data.weather.average24hr !== null) {
+        console.log(`   24hr avg: ${data.weather.average24hr}°F`);
+      }
+      if (data.weather.average5day !== null) {
+        console.log(`   5-day avg: ${data.weather.average5day}°F`);
+      }
+      console.log(`   Total weather readings: ${data.weather.readings.length}`);
+      console.log('');
     }
 
     // Update Google Sheets with current temperatures
