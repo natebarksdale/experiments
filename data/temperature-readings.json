@@ -6,8 +6,15 @@
       "timestamp": "2025-11-21T19:50:45.941Z",
       "deviceId": "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
       "deviceLabel": "NB’s Office"
+    },
+    {
+      "temperature": 66,
+      "unit": "F",
+      "timestamp": "2025-11-21T19:50:58.103Z",
+      "deviceId": "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
+      "deviceLabel": "NB’s Office"
     }
   ],
-  "lastUpdated": "2025-11-21T19:50:45.941Z",
-  "totalReadings": 1
+  "lastUpdated": "2025-11-21T19:50:58.103Z",
+  "totalReadings": 2
 }
