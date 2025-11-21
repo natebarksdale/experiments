@@ -6,9 +6,10 @@ A beautiful, analog-inspired web interface for managing your home's HVAC system 
 
 - **Dashboard View**: Visual representation of your home's layout with all HVAC zones
 - **Real-time Monitoring**: Live temperature readings directly from SmartThings API
-- **Control Panel**: Adjust power and mode settings for each zone
+- **Direct Control**: Control thermostats instantly via SmartThings API (no intermediary services)
+- **Control Panel**: Adjust power, mode, and target temperature for each zone
 - **History Log**: View historical HVAC activity across all zones
-- **Dual Data Sources**: SmartThings API for temperatures (source of truth), Google Sheets for control settings
+- **Dual Data Sources**: SmartThings API for real-time data and control, Google Sheets for state persistence
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Setup
@@ -19,7 +20,7 @@ A beautiful, analog-inspired web interface for managing your home's HVAC system 
 npm install
 ```
 
-### 2. Configure SmartThings API (PRIMARY - for temperature readings)
+### 2. Configure SmartThings API (PRIMARY - for real-time monitoring and control)
 
 #### A. Get SmartThings Personal Access Token
 
@@ -29,10 +30,13 @@ npm install
 4. Select these permissions:
    - ✅ **r:devices:\*** - List all devices
    - ✅ **r:devices:\*:status** - See device status
+   - ✅ **x:devices:\*** - Execute commands (control thermostats)
    - ✅ **r:locations:\*** - Read locations (optional but recommended)
 5. Copy the token (you won't be able to see it again!)
 
-This token is used to fetch **real-time temperature readings** directly from your SmartThings thermostats.
+This token is used to:
+- **Read**: Fetch real-time temperature readings from your SmartThings thermostats
+- **Control**: Send commands directly to thermostats (set mode, temperature, etc.)
 
 ### 3. Configure Google Cloud Project & OAuth (for control settings)
 
@@ -162,19 +166,29 @@ npm run preview
 
 ## Data Architecture
 
-The app uses a **dual-source architecture** for reliability:
+The app uses a **dual-write architecture** for both control and monitoring:
 
-### Primary Data Sources
+### Control Flow
 
-1. **SmartThings API** (Source of truth for temperatures)
+When you change a thermostat setting:
+1. **SmartThings API** receives the command immediately
+   - Direct control via SmartThings commands API
+   - Near-instant response (<2 seconds)
+   - Sets mode (heat/cool/off) and target temperature
+2. **Google Sheets** updated simultaneously
+   - Persists the desired state for reference
+   - Enables historical tracking
+   - Provides fallback if SmartThings unavailable
+
+### Monitoring Flow
+
+Temperature data is fetched in priority order:
+1. **SmartThings API** (Primary source)
    - Real-time temperature readings from thermostats
    - Direct API access with <2 second latency
-   - Automatic fallback to Google Sheets if unavailable
-
-2. **Google Sheets** (Control settings and history)
-   - Control overrides and default settings
-   - Historical log data
-   - Fallback temperature data
+2. **Google Sheets** (Fallback)
+   - Cached temperature data
+   - Used if SmartThings API is unavailable
 
 ### Google Sheets Structure
 
