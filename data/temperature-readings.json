@@ -15,6 +15,99 @@
       "deviceLabel": "NB’s Office"
     }
   ],
-  "lastUpdated": "2025-11-21T19:50:58.103Z",
-  "totalReadings": 2
+  "lastUpdated": "2025-11-21T20:00:46.686Z",
+  "totalReadings": 8,
+  "devices": {
+    "8021826e-78ca-4f3d-bd33-bdac1cadd3f2": {
+      "location": "Original Thermostat",
+      "deviceLabel": "NB’s Office",
+      "readings": [
+        {
+          "temperature": 66,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:47.241Z"
+        }
+      ]
+    },
+    "8051fd90-ab24-467c-8746-3dadbce02252": {
+      "location": "Basement",
+      "deviceLabel": "Basement",
+      "readings": [
+        {
+          "temperature": 68,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:47.419Z"
+        }
+      ]
+    },
+    "87f9fbe2-f6b7-4877-9486-01b896a0acb5": {
+      "location": "Denn",
+      "deviceLabel": "Denn",
+      "readings": [
+        {
+          "temperature": 67,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:47.598Z"
+        }
+      ]
+    },
+    "999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147": {
+      "location": "Front Hall",
+      "deviceLabel": "Front Hall",
+      "readings": [
+        {
+          "temperature": 63,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:47.750Z"
+        }
+      ]
+    },
+    "c44c9f12-1029-43c0-af5f-a5ff572d37c7": {
+      "location": "Jrs Office",
+      "deviceLabel": "JRs Office",
+      "readings": [
+        {
+          "temperature": 67,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:47.910Z"
+        }
+      ]
+    },
+    "8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd": {
+      "location": "Kids Bedroom",
+      "deviceLabel": "Kids Bedroom",
+      "readings": [
+        {
+          "temperature": 69,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:48.108Z"
+        }
+      ]
+    },
+    "dd6b54be-a667-4acc-a112-d89c9923c29d": {
+      "location": "Main Kitchen",
+      "deviceLabel": "Main Kitchen",
+      "readings": [
+        {
+          "temperature": 71,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:48.257Z"
+        }
+      ]
+    },
+    "9ced4ff7-4376-47c8-b882-5724bfb14306": {
+      "location": "Primary Bedroom",
+      "deviceLabel": "Primary Bedroom",
+      "readings": [
+        {
+          "temperature": 72,
+          "unit": "F",
+          "timestamp": "2025-11-21T20:00:48.408Z"
+        }
+      ]
+    }
+  },
+  "totalDevices": 8,
+  "successfulReads": 8,
+  "failedReads": 0
 }
