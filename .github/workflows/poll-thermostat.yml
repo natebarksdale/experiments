@@ -1,0 +1,54 @@
+name: Poll SmartThings Thermostat
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: write # Need write permission to commit data back to repo
+
+jobs:
+  poll-temperature:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Poll thermostat
+        run: |
+          cd smartthings-poller
+          node poll-thermostat.js
+        env:
+          SMARTTHINGS_TOKEN: ${{ secrets.SMARTTHINGS_TOKEN }}
+
+      - name: Commit and push temperature data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Add the data file if it exists
+          if [ -f data/temperature-readings.json ]; then
+            git add data/temperature-readings.json
+
+            # Only commit if there are changes
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+              git commit -m "Update temperature readings - $TIMESTAMP"
+              git push
+              echo "✅ Temperature data committed and pushed"
+            fi
+          else
+            echo "⚠️  No data file found to commit"
+          fi
