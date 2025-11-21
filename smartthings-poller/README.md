@@ -30,8 +30,11 @@ Visit https://account.smartthings.com/tokens and create a new token with these *
 
 Optional but recommended:
 - **r:locations:\*** - Read locations
+- **x:devices:\*** - Execute commands (required if using HVAC Control dashboard for thermostat control)
 
 **Important**: Make sure to select these specific permissions when creating the token. A token without the correct permissions will result in "Access denied" errors.
+
+**Note**: The polling script only needs read permissions. The `x:devices:*` permission is only required if you're also using the HVAC Control dashboard to send commands to thermostats.
 
 ### 2. Get OpenWeatherMap API Key (Optional but Recommended)
 
