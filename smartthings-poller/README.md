@@ -1,14 +1,14 @@
 # SmartThings Thermostat Polling
 
-This directory contains a script that polls the SmartThings API to retrieve temperature readings from your thermostat.
+This directory contains a script that polls the SmartThings API to retrieve temperature readings from multiple thermostats across your home.
 
 ## How It Works
 
 1. **poll-thermostat.js** - Node.js script that:
    - Connects to the SmartThings API using a Personal Access Token
-   - Queries your thermostat device for current temperature
-   - Stores readings in `../data/temperature-readings.json` with timestamps
-   - Keeps the last 1000 readings to prevent unlimited growth
+   - Queries 8 thermostats simultaneously for current temperatures
+   - Stores readings in `../data/temperature-readings.json` with timestamps, organized by device
+   - Keeps the last 1000 readings per device to prevent unlimited growth
 
 2. **GitHub Action** - Automated workflow (`.github/workflows/poll-thermostat.yml`) that:
    - Runs every 15 minutes on a schedule
@@ -37,14 +37,22 @@ In your GitHub repository:
 2. Create a new secret named `SMARTTHINGS_TOKEN`
 3. Paste your SmartThings token as the value
 
-### 3. Update Device ID (if needed)
+### 3. Configure Devices (optional)
 
-The device ID is currently hardcoded in `poll-thermostat.js`:
+The script is pre-configured to poll 8 thermostats across different locations. To add, remove, or modify devices, edit the `DEVICES` array in `poll-thermostat.js`:
+
 ```javascript
-const DEVICE_ID = '8021826e-78ca-4f3d-bd33-bdac1cadd3f2';
+const DEVICES = [
+  { id: '8021826e-78ca-4f3d-bd33-bdac1cadd3f2', location: 'Original Thermostat' },
+  { id: '8051fd90-ab24-467c-8746-3dadbce02252', location: 'Basement' },
+  { id: '87f9fbe2-f6b7-4877-9486-01b896a0acb5', location: 'Denn' },
+  // ... add more devices as needed
+];
 ```
 
-This matches your thermostat URL. If you need to poll a different device, update this value.
+Each device requires:
+- `id` - Device ID from SmartThings URL
+- `location` - Friendly name for the device location
 
 ## Testing Your Token
 
@@ -79,23 +87,43 @@ Or trigger the GitHub Action manually:
 
 ## Data Format
 
-Temperature readings are stored in `data/temperature-readings.json`:
+Temperature readings are stored in `data/temperature-readings.json`, organized by device:
 
 ```json
 {
-  "readings": [
-    {
-      "temperature": 72,
-      "unit": "F",
-      "timestamp": "2025-11-21T19:45:00.000Z",
-      "deviceId": "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
-      "deviceLabel": "Living Room Thermostat"
+  "devices": {
+    "8021826e-78ca-4f3d-bd33-bdac1cadd3f2": {
+      "location": "Original Thermostat",
+      "deviceLabel": "Living Room Thermostat",
+      "readings": [
+        {
+          "temperature": 72,
+          "unit": "F",
+          "timestamp": "2025-11-21T19:45:00.000Z"
+        }
+      ]
+    },
+    "8051fd90-ab24-467c-8746-3dadbce02252": {
+      "location": "Basement",
+      "deviceLabel": "Basement Thermostat",
+      "readings": [
+        {
+          "temperature": 68,
+          "unit": "F",
+          "timestamp": "2025-11-21T19:45:00.000Z"
+        }
+      ]
     }
-  ],
+  },
   "lastUpdated": "2025-11-21T19:45:00.000Z",
-  "totalReadings": 1
+  "totalDevices": 8,
+  "successfulReads": 8,
+  "failedReads": 0,
+  "totalReadings": 16
 }
 ```
+
+Each device stores up to 1000 historical readings.
 
 ## Schedule
 
