@@ -70,6 +70,7 @@ jobs:
           cp -r images _deploy/ 2>/dev/null || true
           cp -r blog-composer _deploy/ 2>/dev/null || true
           cp -r cloudflare-worker _deploy/ 2>/dev/null || true
+          cp -r data _deploy/ 2>/dev/null || true
 
           echo "✅ Static files copied to _deploy/"
           ls -la _deploy/
