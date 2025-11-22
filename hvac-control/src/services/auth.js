@@ -9,6 +9,19 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 // OAuth redirect URI (should match worker configuration)
 const REDIRECT_URI = `${PROXY_URL}/auth/callback`;
 
+// Check configuration on module load
+if (!CLIENT_ID || !PROXY_URL) {
+  console.warn('⚠️ Authentication not configured:');
+  if (!CLIENT_ID) {
+    console.warn('  - Missing VITE_GOOGLE_CLIENT_ID');
+  }
+  if (!PROXY_URL) {
+    console.warn('  - Missing VITE_PROXY_URL');
+  }
+  console.warn('  → Create a .env file with these values to enable authentication.');
+  console.warn('  → See .env.example for template.');
+}
+
 let sessionId = null;
 let accessToken = null;
 let tokenExpiresAt = null;
@@ -49,12 +62,14 @@ export function initializeAuth() {
  */
 export function signIn() {
   if (!CLIENT_ID) {
-    throw new Error('Google Client ID not configured');
+    throw new Error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID in your .env file.');
   }
 
   if (!PROXY_URL) {
-    throw new Error('Proxy URL not configured - set VITE_PROXY_URL');
+    throw new Error('Proxy URL not configured. Please set VITE_PROXY_URL in your .env file to your Cloudflare Worker URL.');
   }
+
+  console.log('Starting OAuth flow with:', { CLIENT_ID: CLIENT_ID.substring(0, 20) + '...', PROXY_URL });
 
   // Generate random state for CSRF protection
   const state = crypto.randomUUID();
@@ -129,7 +144,13 @@ export async function checkSession() {
     throw new Error('No session');
   }
 
+  if (!PROXY_URL) {
+    console.error('PROXY_URL not configured - cannot check session');
+    throw new Error('Authentication proxy not configured. Please set VITE_PROXY_URL in your environment.');
+  }
+
   try {
+    console.log('Checking session with proxy:', PROXY_URL);
     const response = await fetch(`${PROXY_URL}/auth/session`, {
       headers: {
         'Authorization': `Bearer ${sessionId}`
@@ -137,12 +158,14 @@ export async function checkSession() {
     });
 
     if (!response.ok) {
+      console.error('Session check failed with status:', response.status);
       throw new Error('Session invalid or expired');
     }
 
     const data = await response.json();
 
     if (!data.valid) {
+      console.error('Session marked as invalid by proxy');
       throw new Error('Session invalid');
     }
 
