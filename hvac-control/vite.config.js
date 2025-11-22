@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { copyFileSync, mkdirSync, existsSync } from 'fs'
+import { copyFileSync, mkdirSync, existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => ({
@@ -33,8 +33,7 @@ export default defineConfig(({ mode }) => ({
         } else {
           // Create empty log file if it doesn't exist
           const emptyLog = { logs: [] };
-          const fs = require('fs');
-          fs.writeFileSync(resolve(publicDataDir, 'hvac-control-log.json'), JSON.stringify(emptyLog, null, 2));
+          writeFileSync(resolve(publicDataDir, 'hvac-control-log.json'), JSON.stringify(emptyLog, null, 2));
           console.log('Created empty hvac-control-log.json');
         }
       }
