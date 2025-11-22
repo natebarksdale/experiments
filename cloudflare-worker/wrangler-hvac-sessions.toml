@@ -15,7 +15,7 @@ compatibility_date = "2024-01-01"
 # Name it "hvac-sessions" and copy the ID here
 [[kv_namespaces]]
 binding = "SESSIONS"
-# id = "your-kv-namespace-id-here"
+id = "8ef8de20540b4c55ba65e4b05efb7921"
 
 # Workers are free up to 100,000 requests per day
 # KV is free up to 100,000 reads and 1,000 writes per day
