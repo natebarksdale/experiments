@@ -1,0 +1,24 @@
+name: Discover SmartThings Devices
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Discover devices
+        run: |
+          cd smartthings-poller
+          node discover-devices.js
+        env:
+          SMARTTHINGS_TOKEN: ${{ secrets.SMARTTHINGS_TOKEN }}
