@@ -15,7 +15,7 @@
       "deviceLabel": "NB’s Office"
     }
   ],
-  "lastUpdated": "2025-11-22T20:49:30.900Z",
+  "lastUpdated": "2025-11-22T21:13:30.433Z",
   "totalReadings": 552,
   "devices": {
     "8021826e-78ca-4f3d-bd33-bdac1cadd3f2": {
@@ -13847,6 +13847,23 @@
         "description": "overcast clouds",
         "windSpeed": 11.5,
         "cloudiness": 100,
+        "location": {
+          "name": "Washington",
+          "zipCode": "20010"
+        }
+      },
+      {
+        "timestamp": "2025-11-22T21:13:30.427Z",
+        "temperature": {
+          "value": 55.2,
+          "unit": "F"
+        },
+        "humidity": 73,
+        "feelsLike": 53.9,
+        "pressure": 1013,
+        "description": "broken clouds",
+        "windSpeed": 9.22,
+        "cloudiness": 75,
         "location": {
           "name": "Washington",
           "zipCode": "20010"
