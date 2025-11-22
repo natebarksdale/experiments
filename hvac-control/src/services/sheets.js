@@ -3,6 +3,7 @@
 
 import { getAccessToken } from './auth';
 import { fetchZoneTemperatures, isSmartThingsAvailable } from './smartthings';
+import { isProxyAvailable, proxyIFTTT } from './proxy';
 
 const SHEET_ID = '1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo';
 const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || '';
@@ -50,7 +51,7 @@ export const ZONES = [
   // Row 2: JRs Office
   {
     id: 'jrs_office',
-    name: 'Office',
+    name: 'JR Office',
     floor: 2,
     position: 'north',
     hasHvac: true,
@@ -78,7 +79,7 @@ export const ZONES = [
   // Row 4: Kids Bedroom - has main lights (row 3)
   {
     id: 'kids_bedroom',
-    name: 'Bedroom',
+    name: 'CE+H Bed',
     floor: 2,
     position: 'center',
     hasHvac: true,
@@ -109,7 +110,7 @@ export const ZONES = [
   // Row 6: Primary Bedroom - has Floor Lamp (row 5) and ceiling (row 6)
   {
     id: 'primary_bedroom',
-    name: 'Bedroom',
+    name: 'JR+N Bed',
     floor: 3,
     position: 'south',
     hasHvac: true,
@@ -126,7 +127,7 @@ export const ZONES = [
   // Row 7: NB's Office (3rd floor, no "3fl" prefix )
   {
     id: 'nbs_office',
-    name: 'Office',
+    name: 'NB Office',
     floor: 3,
     position: 'north',
     hasHvac: true,
@@ -264,20 +265,31 @@ export async function togglePlug(plugId, currentState = 'off') {
     }
 
     const eventName = plugConfig.webhooks[targetState];
-    const url = `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}`;
-
     console.log(`Toggling plug: ${plugConfig.name} -> ${targetState}`);
-    console.log(`Webhook URL: ${url}`);
 
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-    });
+    // Route through proxy if available (secure), otherwise direct IFTTT (dev mode)
+    if (isProxyAvailable()) {
+      console.log(`Using proxy for IFTTT webhook: ${eventName}`);
+      await proxyIFTTT(eventName, {});
+    } else {
+      // Fallback to direct IFTTT webhook call
+      if (!IFTTT_KEY) {
+        throw new Error('IFTTT webhook key not configured and proxy not available');
+      }
+
+      const url = `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}`;
+      console.log(`Using direct IFTTT webhook: ${url}`);
+
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+      });
+    }
 
     // Update timestamp in Lights sheet
     await updateLightTimestamp(plugConfig.row, targetState);
 
-    console.log(`Plug webhook sent successfully`);
+    console.log(`Plug control sent successfully`);
     return { success: true, targetState };
   } catch (error) {
     console.error('Error toggling plug:', error);
@@ -389,12 +401,12 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'basement_porch',
-    name: 'Porch',
+    name: 'Patio',
     floor: 0,
     position: 'rear',
     hasHvac: false,
     lights: [
-      { name: 'Porch', row: 14 }
+      { name: 'Patio', row: 14 }
     ]
   },
   {
@@ -406,6 +418,9 @@ export const LIGHT_ONLY_ZONES = [
     lights: [
       { name: 'Garage Left', row: 22 },
       { name: 'Garage Right', row: 23 }
+    ],
+    locks: [
+      { name: 'Garage Door', id: 'garage_door' }
     ]
   },
   {
@@ -418,8 +433,7 @@ export const LIGHT_ONLY_ZONES = [
       { name: 'Backyard', row: 18 }
     ],
     locks: [
-      { name: 'Alley Door', id: 'alley_door' },
-      { name: 'Garage Door', id: 'garage_door' }
+      { name: 'Alley Door', id: 'alley_door' }
     ]
   }
 ];
@@ -1044,15 +1058,26 @@ export async function toggleLock(lockId, currentState = 'locked') {
       }
       // Always close when toggling a close-only lock
       const webhookName = lockConfig.webhooks.lock;
-      const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}`;
-
       console.log(`Closing ${lockConfig.name}`);
-      console.log(`Webhook URL: ${url}`);
 
-      await fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-      });
+      // Route through proxy if available (secure), otherwise direct IFTTT (dev mode)
+      if (isProxyAvailable()) {
+        console.log(`Using proxy for IFTTT webhook: ${webhookName}`);
+        await proxyIFTTT(webhookName, {});
+      } else {
+        // Fallback to direct IFTTT webhook call
+        if (!IFTTT_KEY) {
+          throw new Error('IFTTT webhook key not configured and proxy not available');
+        }
+
+        const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}`;
+        console.log(`Using direct IFTTT webhook: ${url}`);
+
+        await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+        });
+      }
 
       // Update timestamp in Lights sheet
       await updateLightTimestamp(lockConfig.row, 'locked');
@@ -1068,20 +1093,31 @@ export async function toggleLock(lockId, currentState = 'locked') {
       ? lockConfig.webhooks.unlock
       : lockConfig.webhooks.lock;
 
-    const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}`;
-
     console.log(`Toggling lock: ${lockConfig.name} -> ${targetState}`);
-    console.log(`Webhook URL: ${url}`);
 
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-    });
+    // Route through proxy if available (secure), otherwise direct IFTTT (dev mode)
+    if (isProxyAvailable()) {
+      console.log(`Using proxy for IFTTT webhook: ${webhookName}`);
+      await proxyIFTTT(webhookName, {});
+    } else {
+      // Fallback to direct IFTTT webhook call
+      if (!IFTTT_KEY) {
+        throw new Error('IFTTT webhook key not configured and proxy not available');
+      }
+
+      const url = `https://maker.ifttt.com/trigger/${webhookName}/with/key/${IFTTT_KEY}`;
+      console.log(`Using direct IFTTT webhook: ${url}`);
+
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+      });
+    }
 
     // Update timestamp in Lights sheet
     await updateLightTimestamp(lockConfig.row, targetState);
 
-    console.log(`Lock webhook sent successfully`);
+    console.log(`Lock control sent successfully`);
     return { success: true, targetState };
   } catch (error) {
     console.error('Error toggling lock:', error);
@@ -1099,24 +1135,22 @@ export async function toggleLight(row, lightName, currentState = 'off') {
   try {
     const targetState = currentState === 'on' ? 'off' : 'on';
 
-    let url;
+    // Determine event name and data based on configuration
+    let eventName;
+    let webhookData = {};
+
     if (USE_UNIVERSAL_WEBHOOKS) {
-      // OPTION 2: Universal webhooks with device name in URL path
-      // URL format: /trigger/{event}/with/key/{key}/{value1}/{value2}/{value3}
-      // IFTTT exposes these as {{Value1}}, {{Value2}}, {{Value3}}
+      // OPTION 2: Universal webhooks with device name
       const deviceName = LIGHT_DEVICE_NAMES[row];
       if (!deviceName) {
         throw new Error(`No device configured for light at row ${row}`);
       }
 
-      const eventName = targetState === 'on' ? 'light_on' : 'light_off';
-      // Pass device name as value1 query parameter
-      url = `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}?value1=${encodeURIComponent(deviceName)}`;
+      eventName = targetState === 'on' ? 'light_on' : 'light_off';
+      webhookData = { value1: deviceName };
 
       console.log(`Toggling light: ${lightName} (row ${row}) -> ${targetState}`);
       console.log(`Device: ${deviceName}`);
-      console.log(`Webhook URL: ${url}`);
-      console.log(`Note: Device name is in query param as value1`);
     } else {
       // OPTION 1: Individual webhooks per light
       const webhookEvents = LIGHT_WEBHOOKS[row];
@@ -1124,26 +1158,35 @@ export async function toggleLight(row, lightName, currentState = 'off') {
         throw new Error(`No webhook configured for light at row ${row}`);
       }
 
-      const eventName = webhookEvents[targetState];
-      url = `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}`;
-
+      eventName = webhookEvents[targetState];
       console.log(`Toggling light: ${lightName} (row ${row}) -> ${targetState}`);
-      console.log(`Webhook URL: ${url}`);
     }
 
-    // Simple POST/GET request - no body needed
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors', // IFTTT doesn't support CORS
-    });
+    // Route through proxy if available (secure), otherwise direct IFTTT (dev mode)
+    if (isProxyAvailable()) {
+      console.log(`Using proxy for IFTTT webhook: ${eventName}`);
+      await proxyIFTTT(eventName, webhookData);
+    } else {
+      // Fallback to direct IFTTT webhook call
+      if (!IFTTT_KEY) {
+        throw new Error('IFTTT webhook key not configured and proxy not available');
+      }
+
+      const url = USE_UNIVERSAL_WEBHOOKS
+        ? `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}?value1=${encodeURIComponent(webhookData.value1)}`
+        : `https://maker.ifttt.com/trigger/${eventName}/with/key/${IFTTT_KEY}`;
+
+      console.log(`Using direct IFTTT webhook: ${url}`);
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors', // IFTTT doesn't support CORS
+      });
+    }
 
     // Update timestamp in Lights sheet
     await updateLightTimestamp(row, targetState);
 
-    // Note: no-cors mode means we can't check response status
-    // We assume success and rely on Google Sheets update to confirm
-    console.log(`Webhook sent successfully`);
-
+    console.log(`Light control sent successfully`);
     return { success: true, targetState };
   } catch (error) {
     console.error('Error toggling light:', error);

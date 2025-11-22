@@ -4,7 +4,7 @@ import TufteHistory from './components/TufteHistory';
 import AdminPanel from './components/AdminPanel';
 import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, fetchLockStatus, fetchPlugStatus, updateControl, toggleLight, toggleLock, triggerHvacWebhook, togglePlug, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES, ZONES } from './services/sheets';
 import { controlThermostat, isSmartThingsAvailable } from './services/smartthings';
-import { initializeAuth, signIn, signOut, isAuthenticated } from './services/auth';
+import { initializeAuth, signIn, signOut, isAuthenticated, isOAuthCallback, handleOAuthCallback } from './services/auth';
 import './App.css';
 
 function App() {
@@ -194,7 +194,7 @@ function App() {
     // Track status for the modal
     const result = {
       sheetUpdated: false,
-      webhookTriggered: false,
+      smartthingsControlled: false,
     };
 
     try {
@@ -211,16 +211,20 @@ function App() {
             await updateControl(conflictIndex, 'mode', settings.mode);
             await updateControl(conflictIndex, 'action', 'toggle');
 
-            // Trigger webhook for the conflicting zone
-            const conflictWebhookResult = await triggerHvacWebhook(
-              conflictZoneId,
-              'off',
-              settings.mode,
-              conflictTarget
-            );
+            // Control thermostat via SmartThings API for the conflicting zone
+            if (isSmartThingsAvailable()) {
+              const conflictControlResult = await controlThermostat(
+                conflictZoneId,
+                'off',
+                settings.mode,
+                conflictTarget
+              );
 
-            if (conflictWebhookResult.success) {
-              console.log(`Webhook sent to turn off ${conflictZoneId}`);
+              if (conflictControlResult.success) {
+                console.log(`SmartThings control sent to turn off ${conflictZoneId}`, conflictControlResult);
+              } else {
+                console.warn(`Failed to control ${conflictZoneId} via SmartThings:`, conflictControlResult.error);
+              }
             }
 
             // Update local state for conflicting zone
@@ -255,26 +259,30 @@ function App() {
       await updateControl(zoneIndex, 'action', 'toggle');
       result.sheetUpdated = true;
 
-      // Also trigger direct HVAC webhook for faster response (if configured for this zone)
+      // Control thermostat directly via SmartThings API for immediate response
       const target = settings.target ?? updatedZones[zoneIndex].preferredState?.target ?? 68;
-      const webhookResult = await triggerHvacWebhook(
-        zoneId,
-        pendingChange.power,
-        pendingChange.mode,
-        target
-      );
+      if (isSmartThingsAvailable()) {
+        const controlResult = await controlThermostat(
+          zoneId,
+          pendingChange.power,
+          pendingChange.mode,
+          target
+        );
 
-      if (webhookResult.success) {
-        console.log('Direct HVAC webhook sent for faster response');
-        result.webhookTriggered = true;
+        if (controlResult.success) {
+          console.log('SmartThings control sent successfully', controlResult);
+          result.smartthingsControlled = true;
+        } else {
+          console.warn('Failed to control thermostat via SmartThings:', controlResult.error);
+        }
       }
 
       // Update zones state with all changes (including conflicts)
       setZones(updatedZones);
 
-      // Don't reload immediately - the change takes time to propagate through IFTTT
+      // Don't reload immediately - the change takes a moment to be reflected
       // The pending indicator will show until the next regular refresh detects the change
-      console.log('Control update sent. Waiting for IFTTT to apply change (check every 2min)...');
+      console.log('Control update sent via SmartThings API. Waiting for change to be reflected (check every 2min)...');
 
       return result;
     } catch (error) {
@@ -543,6 +551,27 @@ function App() {
       )}
     </div>
   );
+    useEffect(() => {
+    // Handle OAuth callback
+    if (isOAuthCallback()) {
+      handleOAuthCallback()
+        .then(() => {
+          // Redirect to clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setAuthenticated(true);
+          loadData();
+        })
+        .catch(err => {
+          console.error('OAuth callback failed:', err);
+          alert('Authentication failed. Please try again.');
+        });
+    } else {
+      // Normal initialization
+      initializeAuth()
+        .then(() => setAuthenticated(isAuthenticated()))
+        .catch(console.error);
+    }
+  }, []);
 }
 
 export default App;

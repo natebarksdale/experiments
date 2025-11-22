@@ -1,0 +1,68 @@
+/* ThreeDaySparkline - 3-day temperature history component */
+
+.three-day-sparkline {
+  display: inline-block;
+  font-family: var(--font-mono);
+}
+
+.three-day-sparkline--loading,
+.three-day-sparkline--empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-100);
+  border-radius: 4px;
+}
+
+.three-day-sparkline__loading-text,
+.three-day-sparkline__empty-text {
+  font-size: 10px;
+  color: var(--gray-500);
+}
+
+.three-day-sparkline__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 0 4px;
+}
+
+.three-day-sparkline__label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.three-day-sparkline__stats {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.three-day-sparkline__stat {
+  color: var(--gray-600);
+}
+
+.three-day-sparkline__stat--high {
+  color: var(--heat);
+}
+
+.three-day-sparkline__stat--low {
+  color: var(--cool);
+}
+
+.three-day-sparkline__chart {
+  display: block;
+  background: var(--gray-50);
+  border-radius: 4px;
+  border: 1px solid var(--gray-200);
+}
+
+.three-day-sparkline__legend text {
+  font-family: var(--font-mono);
+  font-size: 8px;
+}

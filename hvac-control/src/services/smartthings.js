@@ -1,10 +1,13 @@
 // SmartThings API integration
 // Direct integration with SmartThings for real-time thermostat data
+// Control operations are proxied through Cloudflare Worker for security
+
+import { isProxyAvailable, proxySmartThings } from './proxy';
 
 const SMARTTHINGS_API_BASE = 'https://api.smartthings.com/v1';
 
-// Use environment variable for token (not recommended for client-side in production)
-// Better approach: proxy through your own backend
+// Use environment variable for token (only for read operations)
+// Write operations go through proxy to keep token secure
 const SMARTTHINGS_TOKEN = import.meta.env.VITE_SMARTTHINGS_TOKEN || '';
 
 // Device mapping from sheets.js ZONES configuration
@@ -118,4 +121,158 @@ export async function fetchZoneTemperatures() {
  */
 export function isSmartThingsAvailable() {
   return !!SMARTTHINGS_TOKEN;
+}
+
+/**
+ * Execute a command on a SmartThings device
+ * Routes through proxy if available for security
+ */
+async function executeCommand(deviceId, commands) {
+  const endpoint = `/devices/${deviceId}/commands`;
+  const body = { commands };
+
+  // Use proxy if available (secure), otherwise direct API (dev mode)
+  if (isProxyAvailable()) {
+    const response = await proxySmartThings(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+
+    return await response.json();
+  } else {
+    // Fallback to direct API (requires token in environment)
+    if (!SMARTTHINGS_TOKEN) {
+      throw new Error('SmartThings token not configured and proxy not available');
+    }
+
+    const url = `${SMARTTHINGS_API_BASE}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SMARTTHINGS_TOKEN}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`SmartThings command error: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
+  }
+}
+
+/**
+ * Set thermostat mode
+ * @param {string} deviceId - SmartThings device ID
+ * @param {string} mode - 'off', 'heat', 'cool', 'auto', 'emergency heat'
+ */
+export async function setThermostatMode(deviceId, mode) {
+  try {
+    const result = await executeCommand(deviceId, [{
+      component: 'main',
+      capability: 'thermostatMode',
+      command: 'setThermostatMode',
+      arguments: [mode]
+    }]);
+    console.log(`Set thermostat ${deviceId} mode to ${mode}`, result);
+    return { success: true, result };
+  } catch (error) {
+    console.error(`Failed to set thermostat mode:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Set heating setpoint
+ * @param {string} deviceId - SmartThings device ID
+ * @param {number} temperature - Target temperature in Fahrenheit
+ */
+export async function setHeatingSetpoint(deviceId, temperature) {
+  try {
+    const result = await executeCommand(deviceId, [{
+      component: 'main',
+      capability: 'thermostatHeatingSetpoint',
+      command: 'setHeatingSetpoint',
+      arguments: [temperature]
+    }]);
+    console.log(`Set thermostat ${deviceId} heating setpoint to ${temperature}°F`, result);
+    return { success: true, result };
+  } catch (error) {
+    console.error(`Failed to set heating setpoint:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Set cooling setpoint
+ * @param {string} deviceId - SmartThings device ID
+ * @param {number} temperature - Target temperature in Fahrenheit
+ */
+export async function setCoolingSetpoint(deviceId, temperature) {
+  try {
+    const result = await executeCommand(deviceId, [{
+      component: 'main',
+      capability: 'thermostatCoolingSetpoint',
+      command: 'setCoolingSetpoint',
+      arguments: [temperature]
+    }]);
+    console.log(`Set thermostat ${deviceId} cooling setpoint to ${temperature}°F`, result);
+    return { success: true, result };
+  } catch (error) {
+    console.error(`Failed to set cooling setpoint:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Control thermostat (convenience function)
+ * @param {string} zoneId - Zone ID from DEVICE_MAP
+ * @param {string} power - 'on' or 'off'
+ * @param {string} mode - 'heat' or 'cool'
+ * @param {number} target - Target temperature in Fahrenheit
+ */
+export async function controlThermostat(zoneId, power, mode, target) {
+  const deviceId = DEVICE_MAP[zoneId];
+
+  if (!deviceId) {
+    console.error(`No device mapping found for zone ${zoneId}`);
+    return { success: false, error: 'No device mapping' };
+  }
+
+  try {
+    const results = [];
+
+    // Set mode (off if power is off, otherwise heat/cool)
+    const thermostatMode = power === 'off' ? 'off' : mode;
+    const modeResult = await setThermostatMode(deviceId, thermostatMode);
+    results.push({ action: 'setMode', ...modeResult });
+
+    // Set target temperature if power is on
+    if (power === 'on' && target) {
+      if (mode === 'heat') {
+        const setpointResult = await setHeatingSetpoint(deviceId, target);
+        results.push({ action: 'setHeatingSetpoint', ...setpointResult });
+      } else if (mode === 'cool') {
+        const setpointResult = await setCoolingSetpoint(deviceId, target);
+        results.push({ action: 'setCoolingSetpoint', ...setpointResult });
+      }
+    }
+
+    const allSucceeded = results.every(r => r.success);
+
+    return {
+      success: allSucceeded,
+      results,
+      deviceId,
+      zoneId
+    };
+  } catch (error) {
+    console.error(`Failed to control thermostat for zone ${zoneId}:`, error);
+    return { success: false, error: error.message };
+  }
 }

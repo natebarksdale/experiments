@@ -1,0 +1,21 @@
+# Cloudflare Worker Configuration for HVAC Control Proxy
+# This worker secures your SmartThings and IFTTT API keys
+
+name = "hvac-control-proxy"
+main = "hvac-proxy-worker.js"
+compatibility_date = "2024-01-01"
+
+# Account details - add your account_id after creating a Cloudflare account
+# Get this from: https://dash.cloudflare.com/ → Workers & Pages → Overview → Account ID
+# account_id = "your-account-id-here"
+
+# Workers are free up to 100,000 requests per day
+# https://developers.cloudflare.com/workers/platform/pricing/
+
+# Environment variables (secrets)
+# Set these using wrangler:
+#   wrangler secret put SMARTTHINGS_TOKEN --config wrangler-hvac.toml
+#   wrangler secret put IFTTT_WEBHOOK_KEY --config wrangler-hvac.toml
+
+# After deployment, your worker will be available at:
+# https://hvac-control-proxy.<your-subdomain>.workers.dev

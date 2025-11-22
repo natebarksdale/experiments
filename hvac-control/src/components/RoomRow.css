@@ -186,14 +186,30 @@
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
 }
 
-/* Lock indicators - shield/diamond shape, red when unlocked */
+/* Lock indicators - lock shape with semicircular hasp */
 .lock-dot {
   width: 8px;
-  height: 8px;
-  border-radius: 0;
+  height: 6px;
+  border-radius: 1px;
   background: var(--gray-200);
   border: 1px solid var(--gray-300);
-  transform: rotate(45deg);
+  position: relative;
+  margin-top: 5px; /* Space for hasp */
+  transition: all 0.2s ease;
+}
+
+.lock-dot::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 5px;
+  border: 1.5px solid var(--gray-300);
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  background: transparent;
+  bottom: 5px; /* Position above lock body */
+  left: 50%;
+  transform: translateX(-50%);
   transition: all 0.2s ease;
 }
 
@@ -201,6 +217,10 @@
   background: #ef4444;
   border-color: #f87171;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.lock-dot--unlocked::before {
+  border-color: #f87171;
 }
 
 /* Responsive adjustments */
@@ -241,11 +261,24 @@
 
   .lock-dot {
     width: 6px;
-    height: 6px;
+    height: 5px;
+    margin-top: 4px;
+  }
+
+  .lock-dot::before {
+    width: 5px;
+    height: 4px;
+    bottom: 4px;
+    border-width: 1.25px;
   }
 
   .light-status-indicator__count {
     font-size: 0.625rem;
+  }
+
+  .room-row__hvac {
+    grid-template-columns: 16px minmax(80px, 1fr) 60px auto auto;
+    gap: var(--s-1);
   }
 
   .room-row__sparkline {
@@ -262,6 +295,11 @@
     padding: var(--s-1) var(--s-2);
   }
 
+  .room-row__hvac {
+    grid-template-columns: 14px minmax(60px, 1fr) 50px auto auto;
+    gap: 6px;
+  }
+
   .room-row__name {
     font-size: 0.8125rem;
   }
@@ -269,6 +307,10 @@
   .room-row--light-only .room-row__name {
     font-size: 0.75rem;
     line-height: 1.3;
+  }
+
+  .room-row__sparkline {
+    width: 50px;
   }
 
   .temp-value {
@@ -291,7 +333,15 @@
 
   .lock-dot {
     width: 5px;
-    height: 5px;
+    height: 4px;
+    margin-top: 3px;
+  }
+
+  .lock-dot::before {
+    width: 4px;
+    height: 3px;
+    bottom: 3px;
+    border-width: 1px;
   }
 
   .light-status-indicator__count {
