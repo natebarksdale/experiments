@@ -15,8 +15,8 @@
       "deviceLabel": "NB’s Office"
     }
   ],
-  "lastUpdated": "2025-11-22T02:41:59.598Z",
-  "totalReadings": 152,
+  "lastUpdated": "2025-11-22T03:28:57.176Z",
+  "totalReadings": 160,
   "devices": {
     "8021826e-78ca-4f3d-bd33-bdac1cadd3f2": {
       "location": "Original Thermostat",
@@ -239,6 +239,21 @@
             "unit": "F"
           },
           "humidity": 44,
+          "mode": "heat",
+          "coolingSetpoint": 68,
+          "lights": {
+            "anyOn": false,
+            "onCount": 0,
+            "totalCount": 0
+          }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:57.413Z",
+          "temperature": {
+            "value": 66,
+            "unit": "F"
+          },
+          "humidity": 43,
           "mode": "heat",
           "coolingSetpoint": 68,
           "lights": {
@@ -764,6 +779,43 @@
               }
             ]
           }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:57.563Z",
+          "temperature": {
+            "value": 69,
+            "unit": "F"
+          },
+          "humidity": 46,
+          "mode": "cool",
+          "coolingSetpoint": 71,
+          "lights": {
+            "anyOn": false,
+            "onCount": 0,
+            "totalCount": 5,
+            "lights": [
+              {
+                "name": "Kitchen",
+                "status": "off"
+              },
+              {
+                "name": "Bathroom",
+                "status": "off"
+              },
+              {
+                "name": "Studio Ceiling",
+                "status": "off"
+              },
+              {
+                "name": "Studio Floor Lamp",
+                "status": "off"
+              },
+              {
+                "name": "Studio Desk Lamp",
+                "status": "off"
+              }
+            ]
+          }
         }
       ],
       "sheetName": "Basement"
@@ -1071,6 +1123,27 @@
               {
                 "name": "Main Lights",
                 "status": "on"
+              }
+            ]
+          }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:57.688Z",
+          "temperature": {
+            "value": 69,
+            "unit": "F"
+          },
+          "humidity": 43,
+          "mode": "heat",
+          "coolingSetpoint": 66,
+          "lights": {
+            "anyOn": false,
+            "onCount": 0,
+            "totalCount": 1,
+            "lights": [
+              {
+                "name": "Main Lights",
+                "status": "off"
               }
             ]
           }
@@ -1488,6 +1561,35 @@
               }
             ]
           }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:57.800Z",
+          "temperature": {
+            "value": 66,
+            "unit": "F"
+          },
+          "humidity": 46,
+          "mode": "heat",
+          "coolingSetpoint": 66,
+          "lights": {
+            "anyOn": false,
+            "onCount": 0,
+            "totalCount": 3,
+            "lights": [
+              {
+                "name": "Entryway",
+                "status": "off"
+              },
+              {
+                "name": "Foyer Lights",
+                "status": "off"
+              },
+              {
+                "name": "Chandelier",
+                "status": "off"
+              }
+            ]
+          }
         }
       ],
       "sheetName": "Front hall"
@@ -1780,6 +1882,27 @@
         },
         {
           "timestamp": "2025-11-22T02:42:01.009Z",
+          "temperature": {
+            "value": 67,
+            "unit": "F"
+          },
+          "humidity": 36,
+          "mode": "heat",
+          "coolingSetpoint": 66,
+          "lights": {
+            "anyOn": false,
+            "onCount": 0,
+            "totalCount": 1,
+            "lights": [
+              {
+                "name": "Main Lights",
+                "status": "off"
+              }
+            ]
+          }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:57.898Z",
           "temperature": {
             "value": 67,
             "unit": "F"
@@ -2105,6 +2228,27 @@
               {
                 "name": "Main Lights",
                 "status": "on"
+              }
+            ]
+          }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:58.052Z",
+          "temperature": {
+            "value": 68,
+            "unit": "F"
+          },
+          "humidity": 41,
+          "mode": "cool",
+          "coolingSetpoint": 72,
+          "lights": {
+            "anyOn": false,
+            "onCount": 0,
+            "totalCount": 1,
+            "lights": [
+              {
+                "name": "Main Lights",
+                "status": "off"
               }
             ]
           }
@@ -2522,6 +2666,35 @@
               }
             ]
           }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:58.176Z",
+          "temperature": {
+            "value": 68,
+            "unit": "F"
+          },
+          "humidity": 47,
+          "mode": "heat",
+          "coolingSetpoint": 67,
+          "lights": {
+            "anyOn": true,
+            "onCount": 1,
+            "totalCount": 3,
+            "lights": [
+              {
+                "name": "Main Lights",
+                "status": "off"
+              },
+              {
+                "name": "Island Pendants",
+                "status": "off"
+              },
+              {
+                "name": "Under Cabinet",
+                "status": "on"
+              }
+            ]
+          }
         }
       ],
       "sheetName": "Main kitchen"
@@ -2884,6 +3057,31 @@
               }
             ]
           }
+        },
+        {
+          "timestamp": "2025-11-22T03:28:58.271Z",
+          "temperature": {
+            "value": 72,
+            "unit": "F"
+          },
+          "humidity": 46,
+          "mode": "heat",
+          "coolingSetpoint": 65,
+          "lights": {
+            "anyOn": true,
+            "onCount": 2,
+            "totalCount": 2,
+            "lights": [
+              {
+                "name": "Floor Lamp",
+                "status": "on"
+              },
+              {
+                "name": "Ceiling",
+                "status": "on"
+              }
+            ]
+          }
         }
       ],
       "sheetName": "Primary Bedroom"
@@ -3033,9 +3231,26 @@
           "name": "Washington",
           "zipCode": "20010"
         }
+      },
+      {
+        "timestamp": "2025-11-22T03:28:57.174Z",
+        "temperature": {
+          "value": 51.8,
+          "unit": "F"
+        },
+        "humidity": 85,
+        "feelsLike": 50.6,
+        "pressure": 1013,
+        "description": "overcast clouds",
+        "windSpeed": 3.44,
+        "cloudiness": 100,
+        "location": {
+          "name": "Washington",
+          "zipCode": "20010"
+        }
       }
     ],
-    "average24hr": 53.3,
-    "average5day": 53.3
+    "average24hr": 53.1,
+    "average5day": 53.1
   }
 }
