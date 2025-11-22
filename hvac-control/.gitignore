@@ -16,6 +16,9 @@ dist-ssr
 assets/*.js
 assets/*.css
 
+# Build-generated data files
+public/data/
+
 # Environment variables
 .env
 .env.local
