@@ -4,7 +4,7 @@ import TufteHistory from './components/TufteHistory';
 import AdminPanel from './components/AdminPanel';
 import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, fetchLockStatus, fetchPlugStatus, updateControl, toggleLight, toggleLock, triggerHvacWebhook, togglePlug, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES, ZONES } from './services/sheets';
 import { controlThermostat, isSmartThingsAvailable } from './services/smartthings';
-import { initializeAuth, signIn, signOut, isAuthenticated } from './services/auth';
+import { initializeAuth, signIn, signOut, isAuthenticated, isOAuthCallback, handleOAuthCallback } from './services/auth';
 import './App.css';
 
 function App() {
@@ -19,9 +19,25 @@ function App() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
-    initializeAuth()
-      .then(() => setAuthenticated(isAuthenticated()))
-      .catch(console.error);
+    // Handle OAuth callback
+    if (isOAuthCallback()) {
+      handleOAuthCallback()
+        .then(() => {
+          // Redirect to clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setAuthenticated(true);
+          loadData();
+        })
+        .catch(err => {
+          console.error('OAuth callback failed:', err);
+          alert('Authentication failed. Please try again.');
+        });
+    } else {
+      // Normal initialization
+      initializeAuth()
+        .then(() => setAuthenticated(isAuthenticated()))
+        .catch(console.error);
+    }
   }, []);
 
   useEffect(() => {
