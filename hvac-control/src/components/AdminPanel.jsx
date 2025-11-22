@@ -110,8 +110,8 @@ export default function AdminPanel({ onClose }) {
         // API not available, fall through to manual instructions
       }
 
-      // Show manual instructions
-      const message = `To manually rebalance Loop ${loopId}, run this command on the server:\n\ncd smartthings-poller\nnode rebalance-loop.js ${loopId}\n\nOr to rebalance all loops:\n\nnode rebalance-loop.js`;
+      // Show manual instructions - rebalancing now done via HVAC webhooks
+      const message = `Automatic rebalancing is not available in webhook-only mode.\n\nTo rebalance Loop ${loopId}, manually adjust the thermostats via the dashboard.`;
 
       alert(message);
       setRebalancing(prev => ({ ...prev, [`loop${loopId}`]: false }));

@@ -3,7 +3,6 @@ import TufteDashboard from './components/TufteDashboard';
 import TufteHistory from './components/TufteHistory';
 import AdminPanel from './components/AdminPanel';
 import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, fetchLockStatus, fetchPlugStatus, updateControl, toggleLight, toggleLock, triggerHvacWebhook, togglePlug, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES, ZONES } from './services/sheets';
-import { controlThermostat, isSmartThingsAvailable } from './services/smartthings';
 import { initializeAuth, signIn, signOut, isAuthenticated, isOAuthCallback, handleOAuthCallback } from './services/auth';
 import './App.css';
 
@@ -210,7 +209,7 @@ function App() {
     // Track status for the modal
     const result = {
       sheetUpdated: false,
-      smartthingsControlled: false,
+      webhookTriggered: false,
     };
 
     try {
@@ -227,20 +226,18 @@ function App() {
             await updateControl(conflictIndex, 'mode', settings.mode);
             await updateControl(conflictIndex, 'action', 'toggle');
 
-            // Control thermostat via SmartThings API for the conflicting zone
-            if (isSmartThingsAvailable()) {
-              const conflictControlResult = await controlThermostat(
-                conflictZoneId,
-                'off',
-                settings.mode,
-                conflictTarget
-              );
+            // Control HVAC via webhook for the conflicting zone
+            const conflictWebhookResult = await triggerHvacWebhook(
+              conflictZoneId,
+              'off',
+              settings.mode,
+              conflictTarget
+            );
 
-              if (conflictControlResult.success) {
-                console.log(`SmartThings control sent to turn off ${conflictZoneId}`, conflictControlResult);
-              } else {
-                console.warn(`Failed to control ${conflictZoneId} via SmartThings:`, conflictControlResult.error);
-              }
+            if (conflictWebhookResult.success) {
+              console.log(`HVAC webhook sent to turn off ${conflictZoneId}`, conflictWebhookResult);
+            } else {
+              console.warn(`Failed to control ${conflictZoneId} via webhook:`, conflictWebhookResult.reason);
             }
 
             // Update local state for conflicting zone
@@ -275,22 +272,20 @@ function App() {
       await updateControl(zoneIndex, 'action', 'toggle');
       result.sheetUpdated = true;
 
-      // Control thermostat directly via SmartThings API for immediate response
+      // Control HVAC directly via webhook for immediate response
       const target = settings.target ?? updatedZones[zoneIndex].preferredState?.target ?? 68;
-      if (isSmartThingsAvailable()) {
-        const controlResult = await controlThermostat(
-          zoneId,
-          pendingChange.power,
-          pendingChange.mode,
-          target
-        );
+      const webhookResult = await triggerHvacWebhook(
+        zoneId,
+        pendingChange.power,
+        pendingChange.mode,
+        target
+      );
 
-        if (controlResult.success) {
-          console.log('SmartThings control sent successfully', controlResult);
-          result.smartthingsControlled = true;
-        } else {
-          console.warn('Failed to control thermostat via SmartThings:', controlResult.error);
-        }
+      if (webhookResult.success) {
+        console.log('HVAC webhook sent successfully', webhookResult);
+        result.webhookTriggered = true;
+      } else {
+        console.warn('Failed to control HVAC via webhook:', webhookResult.reason);
       }
 
       // Update zones state with all changes (including conflicts)

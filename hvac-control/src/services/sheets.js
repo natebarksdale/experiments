@@ -1,8 +1,8 @@
 // Google Sheets API integration
 // Sheet ID: 1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo
+// Uses webhook-only architecture for device control
 
 import { getAccessToken } from './auth';
-import { fetchZoneTemperatures, isSmartThingsAvailable } from './smartthings';
 import { isProxyAvailable, proxyIFTTT } from './proxy';
 
 const SHEET_ID = '1W12hiuSTZSzDNrcuf9RxCYmQcKJxmm_WCQ9--cJ9BGo';
@@ -11,17 +11,10 @@ const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || '';
 // Using gapi for Google Sheets API
 const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
 
-// Map zone IDs to SmartThings device IDs for sparkline historical data
-export const ZONE_DEVICE_MAP = {
-  'apartment': '8051fd90-ab24-467c-8746-3dadbce02252',      // Basement
-  'jrs_office': 'c44c9f12-1029-43c0-af5f-a5ff572d37c7',    // JR's Office
-  'main_kitchen': 'dd6b54be-a667-4acc-a112-d89c9923c29d',  // Main Kitchen
-  'kids_bedroom': '8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd',  // Kids Bedroom
-  'front_hall': '999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147',    // Front Hall
-  'primary_bedroom': '9ced4ff7-4376-47c8-b882-5724bfb14306', // Primary Bedroom
-  'nbs_office': '8021826e-78ca-4f3d-bd33-bdac1cadd3f2',    // NB's Office
-  'denn': '87f9fbe2-f6b7-4877-9486-01b896a0acb5',          // Den
-};
+// Note: SmartThings device mapping removed - using webhook-only architecture
+// Temperature data now comes from Google Sheets Panel!F2:F9
+// Keeping empty ZONE_DEVICE_MAP for backward compatibility (sparklines won't render)
+export const ZONE_DEVICE_MAP = {};
 
 // Zone configuration matching the Control sheet order (rows 1-8)
 // Loop 1: Primary Bedroom, NBs Office, Denn, Front hall
@@ -507,14 +500,13 @@ async function updateRange(range, values) {
 
 /**
  * Fetch current panel status
- * Reads temperatures from SmartThings API (source of truth)
+ * Reads temperatures from Google Sheets Panel!F2:F9 (webhook-only architecture)
  * Reads control settings from Google Sheets (Control sheet overrides and Panel sheet defaults)
  */
 export async function fetchPanelStatus() {
   try {
-    // Fetch SmartThings temperatures in parallel with Google Sheets data
+    // Fetch all data from Google Sheets (webhook-only architecture)
     const [
-      smartthingsTemps,
       names,
       sheetsTemps,
       minutesAgo,
@@ -528,9 +520,8 @@ export async function fetchPanelStatus() {
       defaultMode,
       defaultTarget,
     ] = await Promise.all([
-      isSmartThingsAvailable() ? fetchZoneTemperatures() : Promise.resolve(null),
       fetchRange('Panel!C2:C9'),
-      fetchRange('Panel!F2:F9'),  // Fallback if SmartThings unavailable
+      fetchRange('Panel!F2:F9'),  // Temperature readings from manual update system
       fetchRange('Panel!E2:E9'),
       // Control sheet columns
       fetchRange('Control!B1:B8'),  // Override flag (TRUE/FALSE)
@@ -577,23 +568,14 @@ export async function fetchPanelStatus() {
         };
       }
 
-      // Get temperature from SmartThings (source of truth) with fallback to Google Sheets
-      let temperature = null;
-      let temperatureSource = 'sheets'; // Track data source for debugging
-
-      if (smartthingsTemps && smartthingsTemps[zone.id]) {
-        temperature = smartthingsTemps[zone.id].temperature;
-        temperatureSource = 'smartthings';
-      } else {
-        // Fallback to Google Sheets temperature
-        temperature = parseFloat(sheetsTemps[index]?.[0]) || null;
-      }
+      // Get temperature from Google Sheets (Panel!F2:F9)
+      const temperature = parseFloat(sheetsTemps[index]?.[0]) || null;
 
       return {
         ...zone,
         unitName: names[index]?.[0] || zone.name,
         temperature: temperature,
-        temperatureSource: temperatureSource, // Add source tracking
+        temperatureSource: 'sheets', // Webhook-only architecture uses Google Sheets
         minutesSinceUpdate: parseInt(minutesAgo[index]?.[0]) || null,
         preferredState: currentState,
         defaultState: defaultState,
