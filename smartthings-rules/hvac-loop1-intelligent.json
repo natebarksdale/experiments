@@ -1,0 +1,324 @@
+{
+  "name": "HVAC Loop 1 - Intelligent Temperature Control",
+  "actions": [
+    {
+      "if": {
+        "or": [
+          {
+            "greater": {
+              "left": {
+                "device": {
+                  "devices": ["999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147"],
+                  "component": "main",
+                  "capability": "thermostatHeatingSetpoint",
+                  "attribute": "heatingSetpoint"
+                }
+              },
+              "right": {
+                "device": {
+                  "devices": ["999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147"],
+                  "component": "main",
+                  "capability": "temperatureMeasurement",
+                  "attribute": "temperature"
+                }
+              }
+            }
+          },
+          {
+            "greater": {
+              "left": {
+                "device": {
+                  "devices": ["9ced4ff7-4376-47c8-b882-5724bfb14306"],
+                  "component": "main",
+                  "capability": "thermostatHeatingSetpoint",
+                  "attribute": "heatingSetpoint"
+                }
+              },
+              "right": {
+                "device": {
+                  "devices": ["9ced4ff7-4376-47c8-b882-5724bfb14306"],
+                  "component": "main",
+                  "capability": "temperatureMeasurement",
+                  "attribute": "temperature"
+                }
+              }
+            }
+          },
+          {
+            "greater": {
+              "left": {
+                "device": {
+                  "devices": ["8021826e-78ca-4f3d-bd33-bdac1cadd3f2"],
+                  "component": "main",
+                  "capability": "thermostatHeatingSetpoint",
+                  "attribute": "heatingSetpoint"
+                }
+              },
+              "right": {
+                "device": {
+                  "devices": ["8021826e-78ca-4f3d-bd33-bdac1cadd3f2"],
+                  "component": "main",
+                  "capability": "temperatureMeasurement",
+                  "attribute": "temperature"
+                }
+              }
+            }
+          },
+          {
+            "greater": {
+              "left": {
+                "device": {
+                  "devices": ["87f9fbe2-f6b7-4877-9486-01b896a0acb5"],
+                  "component": "main",
+                  "capability": "thermostatHeatingSetpoint",
+                  "attribute": "heatingSetpoint"
+                }
+              },
+              "right": {
+                "device": {
+                  "devices": ["87f9fbe2-f6b7-4877-9486-01b896a0acb5"],
+                  "component": "main",
+                  "capability": "temperatureMeasurement",
+                  "attribute": "temperature"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "then": [
+        {
+          "if": {
+            "or": [
+              {
+                "less": {
+                  "left": {
+                    "device": {
+                      "devices": ["999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              },
+              {
+                "less": {
+                  "left": {
+                    "device": {
+                      "devices": ["9ced4ff7-4376-47c8-b882-5724bfb14306"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["9ced4ff7-4376-47c8-b882-5724bfb14306"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              },
+              {
+                "less": {
+                  "left": {
+                    "device": {
+                      "devices": ["8021826e-78ca-4f3d-bd33-bdac1cadd3f2"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["8021826e-78ca-4f3d-bd33-bdac1cadd3f2"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              },
+              {
+                "less": {
+                  "left": {
+                    "device": {
+                      "devices": ["87f9fbe2-f6b7-4877-9486-01b896a0acb5"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["87f9fbe2-f6b7-4877-9486-01b896a0acb5"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "then": [
+            {
+              "command": {
+                "devices": [
+                  "999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147",
+                  "9ced4ff7-4376-47c8-b882-5724bfb14306",
+                  "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
+                  "87f9fbe2-f6b7-4877-9486-01b896a0acb5"
+                ],
+                "commands": [
+                  {
+                    "component": "main",
+                    "capability": "thermostatMode",
+                    "command": "heat"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "else": [
+        {
+          "if": {
+            "or": [
+              {
+                "greater": {
+                  "left": {
+                    "device": {
+                      "devices": ["999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              },
+              {
+                "greater": {
+                  "left": {
+                    "device": {
+                      "devices": ["9ced4ff7-4376-47c8-b882-5724bfb14306"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["9ced4ff7-4376-47c8-b882-5724bfb14306"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              },
+              {
+                "greater": {
+                  "left": {
+                    "device": {
+                      "devices": ["8021826e-78ca-4f3d-bd33-bdac1cadd3f2"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["8021826e-78ca-4f3d-bd33-bdac1cadd3f2"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              },
+              {
+                "greater": {
+                  "left": {
+                    "device": {
+                      "devices": ["87f9fbe2-f6b7-4877-9486-01b896a0acb5"],
+                      "component": "main",
+                      "capability": "temperatureMeasurement",
+                      "attribute": "temperature"
+                    }
+                  },
+                  "right": {
+                    "device": {
+                      "devices": ["87f9fbe2-f6b7-4877-9486-01b896a0acb5"],
+                      "component": "main",
+                      "capability": "thermostatCoolingSetpoint",
+                      "attribute": "coolingSetpoint"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "then": [
+            {
+              "command": {
+                "devices": [
+                  "999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147",
+                  "9ced4ff7-4376-47c8-b882-5724bfb14306",
+                  "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
+                  "87f9fbe2-f6b7-4877-9486-01b896a0acb5"
+                ],
+                "commands": [
+                  {
+                    "component": "main",
+                    "capability": "thermostatMode",
+                    "command": "cool"
+                  }
+                ]
+              }
+            }
+          ],
+          "else": [
+            {
+              "command": {
+                "devices": [
+                  "999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147",
+                  "9ced4ff7-4376-47c8-b882-5724bfb14306",
+                  "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
+                  "87f9fbe2-f6b7-4877-9486-01b896a0acb5"
+                ],
+                "commands": [
+                  {
+                    "component": "main",
+                    "capability": "thermostatMode",
+                    "command": "off"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
