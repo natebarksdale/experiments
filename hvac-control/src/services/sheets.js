@@ -464,7 +464,7 @@ async function fetchRange(range) {
  * Requires OAuth for write access
  */
 async function updateRange(range, values) {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
 
   if (!accessToken) {
     throw new Error('Not authenticated. Please sign in to update controls.');
@@ -981,7 +981,7 @@ function formatLightTimestamp(date = new Date()) {
  * @param {string} state - 'on' or 'off' (or 'unlocked'/'locked' for locks)
  */
 async function updateLightTimestamp(row, state) {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
 
   if (!accessToken) {
     console.log('Not authenticated - skipping timestamp update');

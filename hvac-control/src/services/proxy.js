@@ -25,7 +25,7 @@ async function proxyRequest(path, options = {}) {
     throw new Error('Proxy URL not configured');
   }
 
-  const token = getAccessToken();
+  const token = await getAccessToken();
   if (!token) {
     throw new Error('Not authenticated');
   }
@@ -77,7 +77,7 @@ export async function proxyIFTTT(eventName, data = {}) {
  * Returns user info if token is valid
  */
 export async function verifyProxyAuth() {
-  const token = getAccessToken();
+  const token = await getAccessToken();
   if (!token) {
     return { valid: false };
   }
