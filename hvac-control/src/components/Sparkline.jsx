@@ -23,7 +23,11 @@ export default function Sparkline({ data, width = 60, height = 20, showLights = 
 
   const values = data.map(d => {
     if (typeof d === 'number') return d;
-    return d.value ?? d.temperature?.value;
+    // Support multiple data formats:
+    // - d.value (legacy)
+    // - d.temperature.value (nested object)
+    // - d.temperature (direct number)
+    return d.value ?? d.temperature?.value ?? d.temperature;
   }).filter(v => v != null);
 
   if (values.length === 0) {
@@ -79,9 +83,9 @@ export default function Sparkline({ data, width = 60, height = 20, showLights = 
     const t1 = new Date(d1.timestamp);
     const t2 = new Date(d2.timestamp);
 
-    // Get value - support both old format (d.value) and new format (d.temperature.value)
-    const v1 = d1.value ?? d1.temperature?.value;
-    const v2 = d2.value ?? d2.temperature?.value;
+    // Get value - support multiple formats
+    const v1 = d1.value ?? d1.temperature?.value ?? d1.temperature;
+    const v2 = d2.value ?? d2.temperature?.value ?? d2.temperature;
 
     if (v1 == null || v2 == null) continue;
 
@@ -109,7 +113,7 @@ export default function Sparkline({ data, width = 60, height = 20, showLights = 
   // Last point for emphasis - positioned by its timestamp
   const lastPoint = data[data.length - 1];
   const lastT = new Date(lastPoint.timestamp);
-  const lastValue = lastPoint.value ?? lastPoint.temperature?.value;
+  const lastValue = lastPoint.value ?? lastPoint.temperature?.value ?? lastPoint.temperature;
   const lastX = padding + ((lastT - twentyFourHoursAgo) / timeRange) * plotWidth;
   const lastY = lastValue != null ? padding + plotHeight - ((lastValue - min) / range) * plotHeight : height / 2;
   const lastColor = lastPoint.mode === 'heat' ? 'var(--heat)' : 'var(--cool)';
