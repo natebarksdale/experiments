@@ -1,0 +1,64 @@
+{
+  "name": "Thermostat Temperature Alert - Every 15min",
+  "actions": [
+    {
+      "if": {
+        "equals": {
+          "left": {
+            "device": {
+              "devices": [
+                "8021826e-78ca-4f3d-bd33-bdac1cadd3f2"
+              ],
+              "component": "main",
+              "capability": "temperatureMeasurement",
+              "attribute": "temperature"
+            }
+          },
+          "right": {
+            "device": {
+              "devices": [
+                "8021826e-78ca-4f3d-bd33-bdac1cadd3f2"
+              ],
+              "component": "main",
+              "capability": "temperatureMeasurement",
+              "attribute": "temperature"
+            }
+          }
+        }
+      },
+      "then": [
+        {
+          "command": {
+            "devices": [],
+            "commands": [
+              {
+                "component": "main",
+                "capability": "execute",
+                "command": "execute",
+                "arguments": []
+              }
+            ]
+          }
+        },
+        {
+          "location": {
+            "method": "POST",
+            "url": "https://maker.ifttt.com/trigger/thermostat_reading/with/key/YOUR_IFTTT_KEY",
+            "contentType": "application/json",
+            "body": {
+              "value1": "{{$device.temperatureMeasurement.temperature.value}}",
+              "value2": "{{$device.temperatureMeasurement.temperature.unit}}",
+              "value3": "{{$device.label}}"
+            }
+          }
+        }
+      ],
+      "schedule": {
+        "cron": {
+          "expression": "0 */15 * * * ? *",
+          "timezone": "America/New_York"
+        }
+      }
+    }
+  ]
+}
