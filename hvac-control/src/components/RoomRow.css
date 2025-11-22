@@ -320,13 +320,13 @@
   /* Columns 4-5: Sparkline + Temp close together in middle */
   .room-row__sparkline {
     grid-column: 4 / 5;
-    justify-self: center;
+    justify-self: end;
     width: 50px;
   }
 
   .room-row__temp {
     grid-column: 5 / 6;
-    justify-self: center;
+    justify-self: start;
     display: flex;
     flex-direction: row;
     align-items: baseline;
