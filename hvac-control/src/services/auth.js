@@ -76,11 +76,11 @@ export function signIn() {
 
 /**
  * Handle OAuth callback
- * Called after redirect from Google with authorization code
+ * Called after redirect from worker with session ID
  */
 export async function handleOAuthCallback() {
   const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
+  const sessionIdParam = urlParams.get('session_id');
   const state = urlParams.get('state');
   const error = urlParams.get('error');
 
@@ -88,8 +88,8 @@ export async function handleOAuthCallback() {
     throw new Error(`OAuth error: ${error}`);
   }
 
-  if (!code) {
-    throw new Error('No authorization code received');
+  if (!sessionIdParam) {
+    throw new Error('No session ID received from authentication');
   }
 
   // Verify state matches (CSRF protection)
@@ -101,17 +101,8 @@ export async function handleOAuthCallback() {
   localStorage.removeItem('oauth_state');
 
   try {
-    // Send code to worker to exchange for tokens
-    const response = await fetch(`${PROXY_URL}/auth/callback?code=${code}&state=${state}`);
-
-    if (!response.ok) {
-      throw new Error('Failed to complete authentication');
-    }
-
-    const data = await response.json();
-
     // Store session ID
-    sessionId = data.sessionId;
+    sessionId = sessionIdParam;
     localStorage.setItem('session_id', sessionId);
 
     // Session lasts up to 6 months
@@ -257,5 +248,5 @@ export function isAuthenticated() {
  * Check if we're on the OAuth callback page
  */
 export function isOAuthCallback() {
-  return window.location.search.includes('code=');
+  return window.location.search.includes('session_id=');
 }
