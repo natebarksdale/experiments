@@ -8,6 +8,14 @@ export default {
       return handleCORS();
     }
 
+    // Parse URL to determine which API to proxy
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // OAuth callback from Google doesn't send Origin header (it's a redirect)
+    // Skip origin check for auth callback endpoint
+    const skipOriginCheck = path === '/auth/callback';
+
     // Get the origin of the request
     const origin = request.headers.get('Origin');
 
@@ -21,22 +29,20 @@ export default {
       'http://127.0.0.1:8000'
     ];
 
-    // Check if origin is allowed
-    const isAllowed = allowedOrigins.some(allowed =>
-      origin && origin.startsWith(allowed)
-    );
+    // Check if origin is allowed (unless it's the OAuth callback)
+    if (!skipOriginCheck) {
+      const isAllowed = allowedOrigins.some(allowed =>
+        origin && origin.startsWith(allowed)
+      );
 
-    if (!isAllowed) {
-      console.log('Blocked request from:', origin);
-      return new Response('Forbidden - Invalid origin', {
-        status: 403,
-        headers: { 'Content-Type': 'text/plain' }
-      });
+      if (!isAllowed) {
+        console.log('Blocked request from:', origin);
+        return new Response('Forbidden - Invalid origin', {
+          status: 403,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      }
     }
-
-    // Parse URL to determine which API to proxy
-    const url = new URL(request.url);
-    const path = url.pathname;
 
     try {
       // Route to appropriate handler
@@ -131,15 +137,13 @@ async function handleOAuthCallback(request, env, origin) {
       );
     }
 
-    // Return session ID to client (to be stored as httpOnly cookie or localStorage)
-    return new Response(JSON.stringify({
-      success: true,
-      sessionId,
-      expiresIn: tokens.expires_in
-    }), {
-      status: 200,
-      headers: corsHeaders(origin)
-    });
+    // Redirect back to the app with session ID and state
+    // The app will extract these from the URL and store the session
+    const appUrl = new URL(url.searchParams.get('app_url') || 'https://natebarksdale.github.io/experiments/hvac-control/');
+    appUrl.searchParams.set('session_id', sessionId);
+    appUrl.searchParams.set('state', state || '');
+
+    return Response.redirect(appUrl.toString(), 302);
   } catch (error) {
     console.error('OAuth callback error:', error);
     return new Response(JSON.stringify({
