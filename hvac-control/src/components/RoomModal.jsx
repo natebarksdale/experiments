@@ -56,6 +56,31 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
 
   const loopConflicts = getLoopConflicts();
 
+  // Get current loop state info
+  const getLoopState = () => {
+    if (!loop || !allZones) return null;
+
+    const loopZones = allZones.filter(z => z.loop === loop);
+    const activeZones = loopZones.filter(z => {
+      const effectivePower = z.pendingChange?.power ?? z.preferredState?.power ?? 'off';
+      return effectivePower === 'on';
+    });
+
+    if (activeZones.length === 0) return null;
+
+    // Determine the active mode (should all be the same if properly balanced)
+    const modes = activeZones.map(z => z.pendingChange?.mode ?? z.preferredState?.mode);
+    const primaryMode = modes[0];
+
+    return {
+      loopNumber: loop,
+      mode: primaryMode,
+      activeZones: activeZones.map(z => z.name)
+    };
+  };
+
+  const loopState = getLoopState();
+
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e) => {
@@ -192,6 +217,21 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
               ×
             </button>
           </div>
+
+          {/* Loop State Info */}
+          {loopState && (
+            <div className="room-modal__loop-info">
+              <div className="loop-info-badge">
+                <span className="loop-info-badge__label">Loop {loopState.loopNumber}</span>
+                <span className={`loop-info-badge__mode loop-info-badge__mode--${loopState.mode}`}>
+                  {loopState.mode === 'heat' ? '▲ Heating' : '▼ Cooling'}
+                </span>
+              </div>
+              <div className="loop-info-zones">
+                {loopState.activeZones.join(', ')} {loopState.activeZones.length === 1 ? 'is' : 'are'} on
+              </div>
+            </div>
+          )}
 
           {/* Light Controls */}
           {lights.length > 0 && (

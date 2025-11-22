@@ -14,7 +14,7 @@ export default function ModernZoneModal({
   onTogglePlug,
   onToggleLock,
 }) {
-  const { name, temperature, preferredState, defaultState, hasHvac, hasOverride } = zone;
+  const { name, temperature, preferredState, defaultState, hasHvac, hasOverride, loop } = zone;
   const { power, mode, target } = preferredState || {};
 
   const [localPower, setLocalPower] = useState(power || 'off');
@@ -23,6 +23,31 @@ export default function ModernZoneModal({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const temp = temperature !== null ? Math.round(temperature) : null;
+
+  // Get current loop state info
+  const getLoopState = () => {
+    if (!loop || !allZones) return null;
+
+    const loopZones = allZones.filter(z => z.loop === loop);
+    const activeZones = loopZones.filter(z => {
+      const effectivePower = z.pendingChange?.power ?? z.preferredState?.power ?? 'off';
+      return effectivePower === 'on';
+    });
+
+    if (activeZones.length === 0) return null;
+
+    // Determine the active mode
+    const modes = activeZones.map(z => z.pendingChange?.mode ?? z.preferredState?.mode);
+    const primaryMode = modes[0];
+
+    return {
+      loopNumber: loop,
+      mode: primaryMode,
+      activeZones: activeZones.map(z => z.name)
+    };
+  };
+
+  const loopState = getLoopState();
 
   const getConflictingZones = () => {
     if (!hasHvac || localPower === 'off') return [];
@@ -95,6 +120,20 @@ export default function ModernZoneModal({
             </svg>
           </button>
         </div>
+
+        {loopState && (
+          <div className="modern-loop-info">
+            <div className="modern-loop-info__badge">
+              <span className="modern-loop-info__label">Loop {loopState.loopNumber}</span>
+              <span className={`modern-loop-info__mode modern-loop-info__mode--${loopState.mode}`}>
+                {loopState.mode === 'heat' ? 'Heating' : 'Cooling'}
+              </span>
+            </div>
+            <p className="modern-loop-info__zones">
+              {loopState.activeZones.join(', ')} {loopState.activeZones.length === 1 ? 'is' : 'are'} on
+            </p>
+          </div>
+        )}
 
         <div className="modern-modal__content">
           {hasHvac && (
