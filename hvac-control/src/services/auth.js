@@ -151,18 +151,36 @@ export async function checkSession() {
 
   try {
     console.log('Checking session with proxy:', PROXY_URL);
+    console.log('Session ID (first 20 chars):', sessionId.substring(0, 20) + '...');
+
     const response = await fetch(`${PROXY_URL}/auth/session`, {
       headers: {
         'Authorization': `Bearer ${sessionId}`
       }
     });
 
+    console.log('Session check response status:', response.status);
+
     if (!response.ok) {
-      console.error('Session check failed with status:', response.status);
+      let errorDetails;
+      try {
+        errorDetails = await response.json();
+      } catch (e) {
+        errorDetails = await response.text();
+      }
+      console.error('Session check failed:', {
+        status: response.status,
+        details: errorDetails
+      });
       throw new Error('Session invalid or expired');
     }
 
     const data = await response.json();
+    console.log('Session check response:', {
+      valid: data.valid,
+      hasAccessToken: !!data.accessToken,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null
+    });
 
     if (!data.valid) {
       console.error('Session marked as invalid by proxy');
@@ -172,6 +190,8 @@ export async function checkSession() {
     // Update access token
     accessToken = data.accessToken;
     tokenExpiresAt = data.expiresAt;
+
+    console.log('Session refreshed successfully, token expires:', new Date(tokenExpiresAt).toISOString());
 
     // Schedule next refresh (5 minutes before expiry)
     scheduleTokenRefresh();
@@ -243,19 +263,32 @@ export async function signOut() {
  * Automatically refreshes if expired
  */
 export async function getAccessToken() {
+  console.log('getAccessToken called - current state:', {
+    hasSessionId: !!sessionId,
+    hasAccessToken: !!accessToken,
+    tokenExpiresAt: tokenExpiresAt ? new Date(tokenExpiresAt).toISOString() : null,
+    isTokenValid: accessToken && tokenExpiresAt && tokenExpiresAt > Date.now()
+  });
+
   if (!sessionId) {
+    console.warn('getAccessToken: No session ID found');
     return null;
   }
 
   // If token is still valid, return it
   if (accessToken && tokenExpiresAt && tokenExpiresAt > Date.now()) {
+    console.log('getAccessToken: Returning cached access token');
     return accessToken;
   }
 
   // Token expired or not loaded, check session
+  console.log('getAccessToken: Token expired or not loaded, checking session...');
   try {
-    return await checkSession();
+    const token = await checkSession();
+    console.log('getAccessToken: Successfully refreshed token');
+    return token;
   } catch (err) {
+    console.error('getAccessToken: Failed to refresh token:', err);
     return null;
   }
 }
