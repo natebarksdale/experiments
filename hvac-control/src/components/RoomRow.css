@@ -297,53 +297,46 @@
 
   .room-row__hvac {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-rows: auto auto;
+    grid-template-columns: auto auto 1fr auto auto auto;
     gap: 4px;
     align-items: center;
   }
 
-  /* Row 1: State + Name on same line */
+  /* Columns 1-2: State + Name close together */
   .room-row__state {
     grid-column: 1 / 2;
-    grid-row: 1 / 2;
     justify-self: start;
     font-size: 0.875rem;
-    margin-right: 4px;
   }
 
   .room-row__name {
     grid-column: 2 / 3;
-    grid-row: 1 / 2;
     justify-self: start;
     font-size: 0.8125rem;
   }
 
-  /* Row 2: Sparkline + Temp on same line */
+  /* Column 3: Spacer (flexible) */
+
+  /* Columns 4-5: Sparkline + Temp close together in middle */
   .room-row__sparkline {
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
-    justify-self: start;
+    grid-column: 4 / 5;
+    justify-self: center;
     width: 50px;
-    margin-right: 4px;
   }
 
   .room-row__temp {
-    grid-column: 2 / 3;
-    grid-row: 2 / 3;
-    justify-self: start;
+    grid-column: 5 / 6;
+    justify-self: center;
     display: flex;
     flex-direction: row;
     align-items: baseline;
     gap: 4px;
   }
 
-  /* Column 3: Light indicators (spanning both rows) */
+  /* Column 6: Light indicators on right */
   .room-row__lights {
-    grid-column: 3 / 4;
-    grid-row: 1 / 3;
+    grid-column: 6 / 7;
     justify-self: end;
-    align-self: center;
   }
 
   .room-row--light-only .room-row__name {
