@@ -41,11 +41,11 @@ export function LockedIcon({ size = 24 }) {
         fill="white"
       />
 
-      {/* Hasp - 50% smaller, centered at top */}
+      {/* Hasp - much smaller (50% size), centered at top */}
       <path
-        d="M 9 12 L 9 9 C 9 7.34315 10.3431 6 12 6 C 13.6569 6 15 7.34315 15 9 L 15 12"
+        d="M 10 12 L 10 10 C 10 8.89543 10.8954 8 12 8 C 13.1046 8 14 8.89543 14 10 L 14 12"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         fill="none"
       />
@@ -91,11 +91,11 @@ export function UnlockedIcon({ size = 24 }) {
         fill="white"
       />
 
-      {/* Hasp - 50% smaller, open to the right */}
+      {/* Hasp - much smaller (50% size), open to the right */}
       <path
-        d="M 9 12 L 9 9 C 9 7.34315 10.3431 6 12 6 C 13.6569 6 15 7.34315 15 9 L 15 10"
+        d="M 10 12 L 10 10 C 10 8.89543 10.8954 8 12 8 C 13.1046 8 14 8.89543 14 10 L 14 10.5"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         fill="none"
       />
