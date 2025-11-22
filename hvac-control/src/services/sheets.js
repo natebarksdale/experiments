@@ -51,7 +51,7 @@ export const ZONES = [
   // Row 2: JRs Office
   {
     id: 'jrs_office',
-    name: 'Office',
+    name: 'JR Office',
     floor: 2,
     position: 'north',
     hasHvac: true,
@@ -79,7 +79,7 @@ export const ZONES = [
   // Row 4: Kids Bedroom - has main lights (row 3)
   {
     id: 'kids_bedroom',
-    name: 'Bedroom',
+    name: 'CE+H Bed',
     floor: 2,
     position: 'center',
     hasHvac: true,
@@ -110,7 +110,7 @@ export const ZONES = [
   // Row 6: Primary Bedroom - has Floor Lamp (row 5) and ceiling (row 6)
   {
     id: 'primary_bedroom',
-    name: 'Bedroom',
+    name: 'JR+N Bed',
     floor: 3,
     position: 'south',
     hasHvac: true,
@@ -127,7 +127,7 @@ export const ZONES = [
   // Row 7: NB's Office (3rd floor, no "3fl" prefix )
   {
     id: 'nbs_office',
-    name: 'Office',
+    name: 'NB Office',
     floor: 3,
     position: 'north',
     hasHvac: true,
@@ -401,12 +401,12 @@ export const LIGHT_ONLY_ZONES = [
   },
   {
     id: 'basement_porch',
-    name: 'Porch',
+    name: 'Patio',
     floor: 0,
     position: 'rear',
     hasHvac: false,
     lights: [
-      { name: 'Porch', row: 14 }
+      { name: 'Patio', row: 14 }
     ]
   },
   {
@@ -418,6 +418,9 @@ export const LIGHT_ONLY_ZONES = [
     lights: [
       { name: 'Garage Left', row: 22 },
       { name: 'Garage Right', row: 23 }
+    ],
+    locks: [
+      { name: 'Garage Door', id: 'garage_door' }
     ]
   },
   {
@@ -430,8 +433,7 @@ export const LIGHT_ONLY_ZONES = [
       { name: 'Backyard', row: 18 }
     ],
     locks: [
-      { name: 'Alley Door', id: 'alley_door' },
-      { name: 'Garage Door', id: 'garage_door' }
+      { name: 'Alley Door', id: 'alley_door' }
     ]
   }
 ];

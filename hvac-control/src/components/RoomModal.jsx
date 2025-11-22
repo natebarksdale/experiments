@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { LOCK_CONFIG } from '../services/sheets';
+import { LOCK_CONFIG, ZONE_DEVICE_MAP } from '../services/sheets';
+import ThreeDaySparkline from './ThreeDaySparkline';
 import './RoomModal.css';
 
 /**
@@ -192,160 +193,6 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
             </button>
           </div>
 
-          {/* HVAC Controls */}
-          {hasHvac && (
-            <section className="room-modal__section">
-              <h3 className="room-modal__section-title">Current State</h3>
-
-              <div className="room-modal__current-state">
-                <div className="current-state__temps">
-                  <div className="climate-current">
-                    <span className="climate-label">Current</span>
-                    <div className="climate-temp">
-                      <span className="climate-temp__value">{temp}</span>
-                      <span className="climate-temp__unit">°</span>
-                    </div>
-                  </div>
-
-                  {currentTarget && (
-                    <div className="climate-target">
-                      <span className="climate-label">Target</span>
-                      <div className="climate-temp">
-                        <span className="climate-temp__value">{currentTarget}</span>
-                        <span className="climate-temp__unit">°</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="current-state__mode">
-                  <span className="climate-label">Status</span>
-                  <div className="current-state__status">
-                    {currentPower === 'on' ? (
-                      <span className={`status-badge status-badge--${currentMode}`}>
-                        {currentMode === 'heat' ? '▲ Heating' : '▼ Cooling'}
-                      </span>
-                    ) : (
-                      <span className="status-badge status-badge--off">○ Off</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Proposed Changes */}
-          {hasHvac && (
-            <section className="room-modal__section">
-              <h3 className="room-modal__section-title">Adjust Settings</h3>
-
-              <div className="room-modal__proposed">
-                {/* Power/Mode Selection */}
-                <div className="proposed__controls">
-                  <button
-                    className={`hvac-control-btn hvac-control-btn--off ${proposedPower === 'off' ? 'active' : ''}`}
-                    onClick={() => setProposedPower('off')}
-                  >
-                    <span className="hvac-control-btn__icon">○</span>
-                    <span className="hvac-control-btn__label">Off</span>
-                  </button>
-
-                  <button
-                    className={`hvac-control-btn hvac-control-btn--heat ${proposedPower === 'on' && proposedMode === 'heat' ? 'active' : ''}`}
-                    onClick={() => { setProposedPower('on'); setProposedMode('heat'); }}
-                  >
-                    <span className="hvac-control-btn__icon">▲</span>
-                    <span className="hvac-control-btn__label">Heat</span>
-                  </button>
-
-                  <button
-                    className={`hvac-control-btn hvac-control-btn--cool ${proposedPower === 'on' && proposedMode === 'cool' ? 'active' : ''}`}
-                    onClick={() => { setProposedPower('on'); setProposedMode('cool'); }}
-                  >
-                    <span className="hvac-control-btn__icon">▼</span>
-                    <span className="hvac-control-btn__label">Cool</span>
-                  </button>
-                </div>
-
-                {/* Temperature Adjustment */}
-                <div className={`proposed__temp ${proposedPower === 'off' ? 'proposed__temp--disabled' : ''}`}>
-                  <span className="climate-label">Target Temp</span>
-                  <div className="temp-adjuster">
-                    <button
-                      className="temp-adjuster__btn"
-                      onClick={() => handleTempChange(-1)}
-                      disabled={proposedPower === 'off'}
-                    >
-                      −
-                    </button>
-                    <span className="temp-adjuster__value">{proposedTarget}°</span>
-                    <button
-                      className="temp-adjuster__btn"
-                      onClick={() => handleTempChange(1)}
-                      disabled={proposedPower === 'off'}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Loop conflict warning */}
-                {loopConflicts.length > 0 && (
-                  <div className="loop-conflict-warning">
-                    <div className="loop-conflict-warning__icon">⚠</div>
-                    <div className="loop-conflict-warning__content">
-                      <div className="loop-conflict-warning__title">Loop Conflict</div>
-                      <div className="loop-conflict-warning__message">
-                        {loopConflicts.map(z => z.name).join(', ')} {loopConflicts.length === 1 ? 'is' : 'are'} currently running in {loopConflicts[0]?.preferredState?.mode || 'different'} mode.
-                        Applying this change will turn {loopConflicts.length === 1 ? 'it' : 'them'} off.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <button
-                  className={`proposed__submit ${hasChanges ? 'proposed__submit--active' : ''} ${requestStatus?.success ? 'proposed__submit--success' : ''}`}
-                  onClick={handleSubmit}
-                  disabled={!hasChanges || requestStatus?.sending || requestStatus?.success}
-                >
-                  {requestStatus?.sending ? 'Sending...' :
-                   requestStatus?.success ? '✓ Sent' :
-                   hasChanges ? (loopConflicts.length > 0 ? 'Apply & Resolve Conflicts' : 'Apply Changes') : 'No Changes'}
-                </button>
-
-                {/* Error message */}
-                {requestStatus?.error && (
-                  <div className="proposed__error">
-                    Error: {requestStatus.error}
-                  </div>
-                )}
-
-                {/* Default state info with restore button */}
-                {isDifferentFromDefault && defaultState && (
-                  <div className="default-state-box">
-                    <div className="default-state-box__info">
-                      <span className="default-state-box__label">Default:</span>
-                      <span className="default-state-box__value">
-                        {defaultPower === 'on'
-                          ? `${defaultMode}, ${defaultTarget}°`
-                          : 'Off'
-                        }
-                      </span>
-                    </div>
-                    <button
-                      className="default-state-box__restore"
-                      onClick={handleRestoreAndSubmit}
-                      disabled={requestStatus?.sending || requestStatus?.success}
-                    >
-                      {requestStatus?.sending ? '...' : 'Restore'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
           {/* Light Controls */}
           {lights.length > 0 && (
             <section className="room-modal__section">
@@ -486,6 +333,171 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
                     </motion.button>
                   );
                 })}
+              </div>
+            </section>
+          )}
+
+          {/* HVAC Controls */}
+          {hasHvac && (
+            <section className="room-modal__section">
+              <h3 className="room-modal__section-title">Current State</h3>
+
+              <div className="room-modal__current-state">
+                <div className="current-state__temps">
+                  <div className="climate-current">
+                    <span className="climate-label">Current</span>
+                    <div className="climate-temp">
+                      <span className="climate-temp__value">{temp}</span>
+                      <span className="climate-temp__unit">°</span>
+                    </div>
+                  </div>
+
+                  {currentTarget && (
+                    <div className="climate-target">
+                      <span className="climate-label">Target</span>
+                      <div className="climate-temp">
+                        <span className="climate-temp__value">{currentTarget}</span>
+                        <span className="climate-temp__unit">°</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="current-state__mode">
+                  <span className="climate-label">Status</span>
+                  <div className="current-state__status">
+                    {currentPower === 'on' ? (
+                      <span className={`status-badge status-badge--${currentMode}`}>
+                        {currentMode === 'heat' ? '▲ Heating' : '▼ Cooling'}
+                      </span>
+                    ) : (
+                      <span className="status-badge status-badge--off">○ Off</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Proposed Changes */}
+          {hasHvac && (
+            <section className="room-modal__section">
+              <h3 className="room-modal__section-title">Adjust Settings</h3>
+
+              <div className="room-modal__proposed">
+                {/* Power/Mode Selection */}
+                <div className="proposed__controls">
+                  <button
+                    className={`hvac-control-btn hvac-control-btn--off ${proposedPower === 'off' ? 'active' : ''}`}
+                    onClick={() => setProposedPower('off')}
+                  >
+                    <span className="hvac-control-btn__icon">○</span>
+                    <span className="hvac-control-btn__label">Off</span>
+                  </button>
+
+                  <button
+                    className={`hvac-control-btn hvac-control-btn--heat ${proposedPower === 'on' && proposedMode === 'heat' ? 'active' : ''}`}
+                    onClick={() => { setProposedPower('on'); setProposedMode('heat'); }}
+                  >
+                    <span className="hvac-control-btn__icon">▲</span>
+                    <span className="hvac-control-btn__label">Heat</span>
+                  </button>
+
+                  <button
+                    className={`hvac-control-btn hvac-control-btn--cool ${proposedPower === 'on' && proposedMode === 'cool' ? 'active' : ''}`}
+                    onClick={() => { setProposedPower('on'); setProposedMode('cool'); }}
+                  >
+                    <span className="hvac-control-btn__icon">▼</span>
+                    <span className="hvac-control-btn__label">Cool</span>
+                  </button>
+                </div>
+
+                {/* Temperature Adjustment */}
+                <div className={`proposed__temp ${proposedPower === 'off' ? 'proposed__temp--disabled' : ''}`}>
+                  <span className="climate-label">Target Temp</span>
+                  <div className="temp-adjuster">
+                    <button
+                      className="temp-adjuster__btn"
+                      onClick={() => handleTempChange(-1)}
+                      disabled={proposedPower === 'off'}
+                    >
+                      −
+                    </button>
+                    <span className="temp-adjuster__value">{proposedTarget}°</span>
+                    <button
+                      className="temp-adjuster__btn"
+                      onClick={() => handleTempChange(1)}
+                      disabled={proposedPower === 'off'}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3-Day Temperature History */}
+                {ZONE_DEVICE_MAP[zone.id] && (
+                  <div className="proposed__sparkline">
+                    <ThreeDaySparkline
+                      deviceId={ZONE_DEVICE_MAP[zone.id]}
+                      width={280}
+                      height={60}
+                    />
+                  </div>
+                )}
+
+                {/* Loop conflict warning */}
+                {loopConflicts.length > 0 && (
+                  <div className="loop-conflict-warning">
+                    <div className="loop-conflict-warning__icon">⚠</div>
+                    <div className="loop-conflict-warning__content">
+                      <div className="loop-conflict-warning__title">Loop Conflict</div>
+                      <div className="loop-conflict-warning__message">
+                        {loopConflicts.map(z => z.name).join(', ')} {loopConflicts.length === 1 ? 'is' : 'are'} currently running in {loopConflicts[0]?.preferredState?.mode || 'different'} mode.
+                        Applying this change will turn {loopConflicts.length === 1 ? 'it' : 'them'} off.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  className={`proposed__submit ${hasChanges ? 'proposed__submit--active' : ''} ${requestStatus?.success ? 'proposed__submit--success' : ''}`}
+                  onClick={handleSubmit}
+                  disabled={!hasChanges || requestStatus?.sending || requestStatus?.success}
+                >
+                  {requestStatus?.sending ? 'Sending...' :
+                   requestStatus?.success ? '✓ Sent' :
+                   hasChanges ? (loopConflicts.length > 0 ? 'Apply & Resolve Conflicts' : 'Apply Changes') : 'No Changes'}
+                </button>
+
+                {/* Error message */}
+                {requestStatus?.error && (
+                  <div className="proposed__error">
+                    Error: {requestStatus.error}
+                  </div>
+                )}
+
+                {/* Default state info with restore button */}
+                {isDifferentFromDefault && defaultState && (
+                  <div className="default-state-box">
+                    <div className="default-state-box__info">
+                      <span className="default-state-box__label">Default:</span>
+                      <span className="default-state-box__value">
+                        {defaultPower === 'on'
+                          ? `${defaultMode}, ${defaultTarget}°`
+                          : 'Off'
+                        }
+                      </span>
+                    </div>
+                    <button
+                      className="default-state-box__restore"
+                      onClick={handleRestoreAndSubmit}
+                      disabled={requestStatus?.sending || requestStatus?.success}
+                    >
+                      {requestStatus?.sending ? '...' : 'Restore'}
+                    </button>
+                  </div>
+                )}
               </div>
             </section>
           )}
