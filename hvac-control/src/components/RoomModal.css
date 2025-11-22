@@ -824,6 +824,10 @@
 .lock-control-btn__icon {
   font-size: 1.5rem;
   line-height: 1;
+  margin-top: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lock-control-btn__name {

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { LOCK_CONFIG, ZONE_DEVICE_MAP } from '../services/sheets';
 import ThreeDaySparkline from './ThreeDaySparkline';
+import { LockedIcon, UnlockedIcon } from './LockIcon';
 import './RoomModal.css';
 
 /**
@@ -353,7 +354,7 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
                       )}
 
                       <div className="lock-control-btn__icon">
-                        {isUnlocked ? '🔓' : '🔒'}
+                        {isUnlocked ? <UnlockedIcon size={24} /> : <LockedIcon size={24} />}
                       </div>
                       <div className="lock-control-btn__name">
                         {lock.name}
