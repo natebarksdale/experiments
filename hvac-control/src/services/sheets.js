@@ -293,6 +293,10 @@ export async function togglePlug(plugId, currentState = 'off') {
     return { success: true, targetState };
   } catch (error) {
     console.error('Error toggling plug:', error);
+    // Improve error message for authentication issues
+    if (error.message.includes('Invalid session') || error.message.includes('Session invalid') || error.message.includes('Not authenticated')) {
+      throw new Error('Session expired. Please sign in again to control plugs.');
+    }
     throw error;
   }
 }
@@ -464,13 +468,13 @@ async function fetchRange(range) {
  * Requires OAuth for write access
  */
 async function updateRange(range, values) {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('Not authenticated. Please sign in to update controls.');
-  }
-
   try {
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      throw new Error('Session expired. Please sign in again to make changes.');
+    }
+
     const url = `${BASE_URL}/${SHEET_ID}/values/${range}?valueInputOption=RAW`;
     const response = await fetch(url, {
       method: 'PUT',
@@ -493,6 +497,10 @@ async function updateRange(range, values) {
     return { success: true, data };
   } catch (error) {
     console.error('Error updating Sheets:', error);
+    // Improve error message for authentication issues
+    if (error.message.includes('Invalid session') || error.message.includes('Session invalid') || error.message.includes('Not authenticated')) {
+      throw new Error('Session expired. Please sign in again to make changes.');
+    }
     throw error;
   }
 }
@@ -1121,6 +1129,10 @@ export async function toggleLock(lockId, currentState = 'locked') {
     return { success: true, targetState };
   } catch (error) {
     console.error('Error toggling lock:', error);
+    // Improve error message for authentication issues
+    if (error.message.includes('Invalid session') || error.message.includes('Session invalid') || error.message.includes('Not authenticated')) {
+      throw new Error('Session expired. Please sign in again to control locks.');
+    }
     throw error;
   }
 }
@@ -1190,6 +1202,10 @@ export async function toggleLight(row, lightName, currentState = 'off') {
     return { success: true, targetState };
   } catch (error) {
     console.error('Error toggling light:', error);
+    // Improve error message for authentication issues
+    if (error.message.includes('Invalid session') || error.message.includes('Session invalid') || error.message.includes('Not authenticated')) {
+      throw new Error('Session expired. Please sign in again to control lights.');
+    }
     throw error;
   }
 }
