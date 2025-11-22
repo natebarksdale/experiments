@@ -229,15 +229,15 @@
     gap: var(--ios-space-3);
   }
 
-  /* Align sparkline with middle third on iPhone portrait */
+  /* Narrower sparkline on iPhone portrait */
   .ios-card__sparkline-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    justify-items: center;
+    display: flex;
+    justify-content: center;
     align-items: center;
   }
 
   .ios-card__sparkline {
-    grid-column: 2 / 3; /* Position in middle column */
+    transform: scale(0.7);
+    transform-origin: center;
   }
 }
