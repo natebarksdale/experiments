@@ -1,0 +1,294 @@
+{
+  "name": "HVAC Loop 2 - Smart Sync",
+  "actions": [
+    {
+      "if": {
+        "or": [
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["8051fd90-ab24-467c-8746-3dadbce02252"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "heat"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["c44c9f12-1029-43c0-af5f-a5ff572d37c7"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "heat"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["dd6b54be-a667-4acc-a112-d89c9923c29d"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "heat"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "heat"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["8051fd90-ab24-467c-8746-3dadbce02252"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "cool"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["c44c9f12-1029-43c0-af5f-a5ff572d37c7"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "cool"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["dd6b54be-a667-4acc-a112-d89c9923c29d"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "cool"
+              }
+            }
+          },
+          {
+            "equals": {
+              "left": {
+                "device": {
+                  "devices": ["8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd"],
+                  "component": "main",
+                  "capability": "thermostatMode",
+                  "attribute": "thermostatMode",
+                  "trigger": true
+                }
+              },
+              "right": {
+                "string": "cool"
+              }
+            }
+          }
+        ]
+      },
+      "then": [
+        {
+          "if": {
+            "and": [
+              {
+                "or": [
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["8051fd90-ab24-467c-8746-3dadbce02252"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "heat"
+                      }
+                    }
+                  },
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["c44c9f12-1029-43c0-af5f-a5ff572d37c7"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "heat"
+                      }
+                    }
+                  },
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["dd6b54be-a667-4acc-a112-d89c9923c29d"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "heat"
+                      }
+                    }
+                  },
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "heat"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "or": [
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["8051fd90-ab24-467c-8746-3dadbce02252"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "cool"
+                      }
+                    }
+                  },
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["c44c9f12-1029-43c0-af5f-a5ff572d37c7"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "cool"
+                      }
+                    }
+                  },
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["dd6b54be-a667-4acc-a112-d89c9923c29d"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "cool"
+                      }
+                    }
+                  },
+                  {
+                    "equals": {
+                      "left": {
+                        "device": {
+                          "devices": ["8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd"],
+                          "component": "main",
+                          "capability": "thermostatMode",
+                          "attribute": "thermostatMode"
+                        }
+                      },
+                      "right": {
+                        "string": "cool"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "then": [
+            {
+              "command": {
+                "devices": [
+                  "8051fd90-ab24-467c-8746-3dadbce02252",
+                  "c44c9f12-1029-43c0-af5f-a5ff572d37c7",
+                  "dd6b54be-a667-4acc-a112-d89c9923c29d",
+                  "8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd"
+                ],
+                "commands": [
+                  {
+                    "component": "main",
+                    "capability": "thermostatMode",
+                    "command": "off"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
