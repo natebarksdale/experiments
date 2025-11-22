@@ -101,7 +101,7 @@ export default function Sparkline({ data, width = 60, height = 20, showLights = 
     // Thickness based on power/operating state
     // Support both old format (d1.power) and new format (d1.operatingState)
     const isActive = d1.power === 'on' || d1.operatingState === 'heating' || d1.operatingState === 'cooling';
-    const strokeWidth = isActive ? 2.5 : 1;
+    const strokeWidth = isActive ? 4 : 1;
 
     segments.push({
       x1, y1, x2, y2,
