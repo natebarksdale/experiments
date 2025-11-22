@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import SmartSparkline from './SmartSparkline';
-import { ZONE_DEVICE_MAP } from '../services/sheets';
 import './RoomRow.css';
 
 /**
@@ -105,17 +104,14 @@ export default function RoomRow({ zone, sparklineData, lights, plugs = [], locks
             <h3 className={`room-row__name ${hasOverride ? 'room-row__name--override' : ''}`}>{name}</h3>
 
             <div className="room-row__sparkline">
-              {/* Use SmartSparkline to fetch historical data if deviceId available */}
-              {ZONE_DEVICE_MAP[zone.id] ? (
-                <SmartSparkline
-                  deviceId={ZONE_DEVICE_MAP[zone.id]}
-                  width={80}
-                  height={24}
-                  showLights={true}
-                />
-              ) : (
-                <svg width={80} height={24} />
-              )}
+              {/* Use SmartSparkline with log history data */}
+              <SmartSparkline
+                zoneName={zone.unitName || zone.name}
+                logHistory={sparklineData || []}
+                width={80}
+                height={24}
+                showLights={true}
+              />
             </div>
 
             <div className="room-row__temp">

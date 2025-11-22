@@ -4,37 +4,8 @@ import RoomModal from './RoomModal';
 import { LOCK_CONFIG } from '../services/sheets';
 import './TufteDashboard.css';
 
-/**
- * Extract sparkline data for a specific zone from log history
- * Returns array of {value, timestamp, mode, power} for the last 24h
- */
-const getSparklineData = (zoneName, logs) => {
-  if (!logs || logs.length === 0) {
-    return [];
-  }
-
-  const oneDayAgo = new Date();
-  oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
-  const sparklineData = [];
-
-  for (const log of logs) {
-    if (log.timestamp < oneDayAgo) break; // logs are reverse chronological
-
-    const zoneData = log.parsed?.find(z => z.name === zoneName);
-    if (zoneData && zoneData.temperature) {
-      sparklineData.push({
-        value: zoneData.temperature,
-        timestamp: log.timestamp,
-        mode: zoneData.mode,
-        power: zoneData.power,
-      });
-    }
-  }
-
-  // Reverse to get chronological order (oldest to newest)
-  return sparklineData.reverse();
-};
+// Note: Sparkline data extraction moved to SmartSparkline component
+// It now uses extractZoneTemperatureHistory() from sheets.js
 
 export default function TufteDashboard({ zones, lightOnlyZones = [], lights = [], plugs = [], locks = [], logs, onUpdateZone, onRestoreDefault, onToggleLight, onTogglePlug, onToggleLock }) {
   const [selectedZone, setSelectedZone] = useState(null);
@@ -146,7 +117,6 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
 
                 {/* HVAC Zones - full width rows */}
                 {floor.hvacZones.map(zone => {
-                  const sparklineData = getSparklineData(zone.unitName || zone.name, logs);
                   const zoneLights = getZoneLights(zone);
                   const zonePlugs = getZonePlugs(zone);
                   const zoneLocks = getZoneLocks(zone);
@@ -155,7 +125,7 @@ export default function TufteDashboard({ zones, lightOnlyZones = [], lights = []
                     <RoomRow
                       key={zone.id}
                       zone={zone}
-                      sparklineData={sparklineData}
+                      sparklineData={logs}
                       lights={zoneLights}
                       plugs={zonePlugs}
                       locks={zoneLocks}

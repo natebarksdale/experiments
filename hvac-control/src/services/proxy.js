@@ -59,15 +59,8 @@ async function proxyRequest(path, options = {}) {
   return response;
 }
 
-/**
- * Make a SmartThings API request through the proxy
- * @param {string} endpoint - SmartThings API endpoint (e.g., '/devices/{id}/commands')
- * @param {object} options - Fetch options
- */
-export async function proxySmartThings(endpoint, options = {}) {
-  const path = `/smartthings${endpoint}`;
-  return await proxyRequest(path, options);
-}
+// Note: SmartThings proxy functionality removed - using webhook-only architecture
+// All device control now uses IFTTT webhooks instead of SmartThings API
 
 /**
  * Make an IFTTT webhook request through the proxy

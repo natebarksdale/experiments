@@ -1,114 +1,55 @@
 import { useEffect, useState } from 'react';
+import { extractZoneTemperatureHistory } from '../services/sheets';
 import './ThreeDaySparkline.css';
 
 /**
  * ThreeDaySparkline - Shows 3 days of temperature history with high/low temps
- * Includes both room temperature and outside temperature traces
+ * Uses webhook-only architecture (Google Sheets log data)
  */
-export default function ThreeDaySparkline({ deviceId, width = 200, height = 60 }) {
+export default function ThreeDaySparkline({ zoneName, logHistory = [], width = 200, height = 60 }) {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDeviceHistory();
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchDeviceHistory, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [deviceId]);
-
-  async function fetchDeviceHistory() {
-    try {
-      // Fetch from relative path
-      const response = await fetch('/experiments/data/temperature-readings.json');
-
-      if (!response.ok) {
-        // Fallback to dev path
-        const devResponse = await fetch('/data/temperature-readings.json');
-        if (!devResponse.ok) {
-          throw new Error('Failed to fetch temperature data');
-        }
-        const allData = await devResponse.json();
-        processData(allData);
-        return;
-      }
-
-      const allData = await response.json();
-      processData(allData);
-    } catch (error) {
-      console.error('Error fetching 3-day sparkline data:', error);
-      setLoading(false);
-    }
-  }
-
-  function processData(allData) {
-    const deviceData = allData.devices?.[deviceId];
-    const outsideData = allData.weather; // Assuming weather data is stored here
-
-    if (!deviceData || !deviceData.readings || deviceData.readings.length === 0) {
+    if (!zoneName || !logHistory || logHistory.length === 0) {
       setData(null);
-      setLoading(false);
       return;
     }
 
-    // Filter readings for last 3 days
-    const now = new Date();
-    const threeDaysAgo = new Date(now - 3 * 24 * 60 * 60 * 1000);
+    processData();
+  }, [zoneName, logHistory]);
 
-    const filteredReadings = deviceData.readings.filter(reading => {
-      const readingTime = new Date(reading.timestamp);
-      return readingTime >= threeDaysAgo;
-    });
+  function processData() {
+    // Extract 3 days (72 hours) of temperature history for this zone
+    const roomReadings = extractZoneTemperatureHistory(zoneName, logHistory, 72);
 
-    if (filteredReadings.length === 0) {
+    if (roomReadings.length === 0) {
       setData(null);
-      setLoading(false);
       return;
     }
 
     // Calculate high/low for room temp
-    const roomTemps = filteredReadings.map(r => r.value ?? r.temperature?.value ?? r.temperature).filter(v => v != null);
+    const roomTemps = roomReadings.map(r => r.temperature).filter(v => v != null);
     const roomHigh = Math.max(...roomTemps);
     const roomLow = Math.min(...roomTemps);
 
-    // Process outside temperature data if available
-    let outsideReadings = [];
-    let outsideHigh = null;
-    let outsideLow = null;
+    // Note: Outside temperature data not available in webhook architecture
+    // Would need to add weather data to log entries to support this
 
-    if (outsideData && outsideData.readings) {
-      outsideReadings = outsideData.readings.filter(reading => {
-        const readingTime = new Date(reading.timestamp);
-        return readingTime >= threeDaysAgo;
-      });
-
-      if (outsideReadings.length > 0) {
-        const outsideTemps = outsideReadings.map(r => r.temperature).filter(v => v != null);
-        outsideHigh = Math.max(...outsideTemps);
-        outsideLow = Math.min(...outsideTemps);
-      }
-    }
+    const now = new Date();
+    const threeDaysAgo = new Date(now - 3 * 24 * 60 * 60 * 1000);
 
     setData({
-      roomReadings: filteredReadings,
-      outsideReadings,
+      roomReadings,
+      outsideReadings: [], // Not available in webhook architecture
       roomHigh,
       roomLow,
-      outsideHigh,
-      outsideLow,
+      outsideHigh: null,
+      outsideLow: null,
       timeRange: threeDaysAgo
     });
-    setLoading(false);
   }
 
-  if (loading) {
-    return (
-      <div className="three-day-sparkline three-day-sparkline--loading" style={{ width, height }}>
-        <div className="three-day-sparkline__loading-text">···</div>
-      </div>
-    );
-  }
-
-  if (!data || data.roomReadings.length === 0) {
+  if (!zoneName || logHistory.length === 0 || !data || data.roomReadings.length === 0) {
     return (
       <div className="three-day-sparkline three-day-sparkline--empty" style={{ width, height }}>
         <div className="three-day-sparkline__empty-text">No data</div>

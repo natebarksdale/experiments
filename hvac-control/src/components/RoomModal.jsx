@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { LOCK_CONFIG, ZONE_DEVICE_MAP } from '../services/sheets';
+import { LOCK_CONFIG } from '../services/sheets';
 import ThreeDaySparkline from './ThreeDaySparkline';
 import { LockedIcon, UnlockedIcon } from './LockIcon';
 import './RoomModal.css';
@@ -9,7 +9,7 @@ import './RoomModal.css';
  * RoomModal - Detailed room control interface
  * Opens as a modal overlay for comprehensive room management
  */
-export default function RoomModal({ zone, lights, plugs = [], locks = [], allZones, onClose, onUpdateZone, onRestoreDefault, onToggleLight, onTogglePlug, onToggleLock }) {
+export default function RoomModal({ zone, lights, plugs = [], locks = [], allZones, logs = [], onClose, onUpdateZone, onRestoreDefault, onToggleLight, onTogglePlug, onToggleLock }) {
   const { name, temperature, preferredState, defaultState, hasHvac, pendingChange, hasOverride, loop } = zone;
   const { power: currentPower, mode: currentMode, target: currentTarget } = preferredState || {};
   const { power: defaultPower, mode: defaultMode, target: defaultTarget } = defaultState || {};
@@ -476,10 +476,11 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
                 </div>
 
                 {/* 3-Day Temperature History */}
-                {ZONE_DEVICE_MAP[zone.id] && (
+                {hasHvac && (
                   <div className="proposed__sparkline">
                     <ThreeDaySparkline
-                      deviceId={ZONE_DEVICE_MAP[zone.id]}
+                      zoneName={zone.unitName || zone.name}
+                      logHistory={logs}
                       width={280}
                       height={60}
                     />
