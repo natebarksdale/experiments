@@ -106,9 +106,11 @@ jobs:
           cd hvac-control
           npm run build
         env:
-          VITE_SMARTTHINGS_TOKEN: ${{ secrets.VITE_SMARTTHINGS_TOKEN }}
-          VITE_GOOGLE_SHEETS_API_KEY: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY }}
+          VITE_USE_PROXY: ${{ secrets.VITE_USE_PROXY }}
+          VITE_PROXY_URL: ${{ secrets.VITE_PROXY_URL }}
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_SHEETS_API_KEY: ${{ secrets.VITE_GOOGLE_SHEETS_API_KEY }}
+          VITE_SMARTTHINGS_TOKEN: ${{ secrets.VITE_SMARTTHINGS_TOKEN }}
           VITE_IFTTT_WEBHOOK_KEY: ${{ secrets.VITE_IFTTT_WEBHOOK_KEY }}
 
       - name: Copy HVAC Control build to deployment directory
