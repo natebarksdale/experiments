@@ -1,0 +1,33 @@
+# Cloudflare Worker Configuration for HVAC Control Proxy with Sessions
+# This worker secures your SmartThings and IFTTT API keys
+# AND handles OAuth sessions for persistent login
+
+name = "hvac-control-proxy-sessions"
+main = "hvac-proxy-worker-sessions.js"
+compatibility_date = "2024-01-01"
+
+# Account details - add your account_id after creating a Cloudflare account
+# Get this from: https://dash.cloudflare.com/ → Workers & Pages → Overview → Account ID
+# account_id = "your-account-id-here"
+
+# Workers KV Namespace for session storage
+# Create this in Cloudflare dashboard: Workers & Pages → KV → Create namespace
+# Name it "hvac-sessions" and copy the ID here
+[[kv_namespaces]]
+binding = "SESSIONS"
+# id = "your-kv-namespace-id-here"
+
+# Workers are free up to 100,000 requests per day
+# KV is free up to 100,000 reads and 1,000 writes per day
+# https://developers.cloudflare.com/workers/platform/pricing/
+
+# Environment variables (secrets)
+# Set these using wrangler:
+#   wrangler secret put SMARTTHINGS_TOKEN --config wrangler-hvac-sessions.toml
+#   wrangler secret put IFTTT_WEBHOOK_KEY --config wrangler-hvac-sessions.toml
+#   wrangler secret put GOOGLE_CLIENT_ID --config wrangler-hvac-sessions.toml
+#   wrangler secret put GOOGLE_CLIENT_SECRET --config wrangler-hvac-sessions.toml
+#   wrangler secret put OAUTH_REDIRECT_URI --config wrangler-hvac-sessions.toml
+
+# After deployment, your worker will be available at:
+# https://hvac-control-proxy-sessions.<your-subdomain>.workers.dev
