@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { LOCK_CONFIG } from '../services/sheets';
-import ThreeDaySparkline from './ThreeDaySparkline';
 import { LockedIcon, UnlockedIcon } from './LockIcon';
 import './RoomModal.css';
 
@@ -474,18 +473,6 @@ export default function RoomModal({ zone, lights, plugs = [], locks = [], allZon
                     </button>
                   </div>
                 </div>
-
-                {/* 3-Day Temperature History */}
-                {hasHvac && (
-                  <div className="proposed__sparkline">
-                    <ThreeDaySparkline
-                      zoneName={zone.unitName || zone.name}
-                      logHistory={logs}
-                      width={280}
-                      height={60}
-                    />
-                  </div>
-                )}
 
                 {/* Loop conflict warning */}
                 {loopConflicts.length > 0 && (
