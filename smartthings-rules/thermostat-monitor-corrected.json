@@ -1,0 +1,52 @@
+{
+  "name": "Monitor Thermostats Every 15 Minutes",
+  "actions": [
+    {
+      "every": {
+        "interval": {
+          "value": {
+            "integer": 15
+          },
+          "unit": "Minute"
+        },
+        "actions": [
+          {
+            "if": {
+              "greater": {
+                "left": {
+                  "device": {
+                    "devices": [
+                      "8021826e-78ca-4f3d-bd33-bdac1cadd3f2"
+                    ],
+                    "component": "main",
+                    "capability": "temperatureMeasurement",
+                    "attribute": "temperature"
+                  }
+                },
+                "right": {
+                  "integer": 85
+                }
+              },
+              "then": [
+                {
+                  "command": {
+                    "devices": [
+                      "8021826e-78ca-4f3d-bd33-bdac1cadd3f2"
+                    ],
+                    "commands": [
+                      {
+                        "component": "main",
+                        "capability": "thermostatMode",
+                        "command": "cool"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
