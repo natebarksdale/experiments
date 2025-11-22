@@ -8,10 +8,12 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const { analyzeAllLoops } = require('./hvac-control-logic');
 
 const SMARTTHINGS_API_BASE = 'https://api.smartthings.com/v1';
 const TOKEN = process.env.SMARTTHINGS_TOKEN;
 const DATA_FILE = path.join(__dirname, '../data/temperature-readings.json');
+const CONTROL_LOG_FILE = path.join(__dirname, '../data/hvac-control-log.json');
 
 // Google Sheets configuration
 const GOOGLE_SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY;
@@ -408,6 +410,175 @@ async function updateGoogleSheet(temperatureMap) {
 }
 
 /**
+ * Execute a command on a SmartThings device
+ */
+async function executeDeviceCommand(deviceId, commands) {
+  try {
+    const url = `${SMARTTHINGS_API_BASE}/devices/${deviceId}/commands`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ commands })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`SmartThings command error: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error executing device command:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Set thermostat mode on a device
+ */
+async function setThermostatMode(deviceId, mode) {
+  return executeDeviceCommand(deviceId, [{
+    component: 'main',
+    capability: 'thermostatMode',
+    command: 'setThermostatMode',
+    arguments: [mode]
+  }]);
+}
+
+/**
+ * Load control log history
+ */
+async function loadControlLog() {
+  try {
+    const data = await fs.readFile(CONTROL_LOG_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return { logs: [] };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Save control log entry
+ */
+async function saveControlLog(logData) {
+  try {
+    const existingLog = await loadControlLog();
+
+    // Add new entry
+    existingLog.logs.unshift(logData);
+
+    // Keep only last 1000 entries
+    if (existingLog.logs.length > 1000) {
+      existingLog.logs = existingLog.logs.slice(0, 1000);
+    }
+
+    await fs.writeFile(CONTROL_LOG_FILE, JSON.stringify(existingLog, null, 2));
+  } catch (error) {
+    console.error('Error saving control log:', error.message);
+  }
+}
+
+/**
+ * Execute HVAC control actions
+ */
+async function executeControlActions(analysis) {
+  const results = [];
+
+  console.log('\n🎛️  HVAC Loop Control Analysis');
+  console.log('═══════════════════════════════════════════════════');
+
+  // Display loop summaries
+  console.log(`\n📍 ${analysis.loop1.loopName}`);
+  console.log(`   Recommended mode: ${analysis.loop1.decision.recommendedMode}`);
+  console.log(`   ${analysis.loop1.decision.reason}`);
+  console.log(`   Priority: ${analysis.loop1.decision.priority}`);
+
+  console.log(`\n📍 ${analysis.loop2.loopName}`);
+  console.log(`   Recommended mode: ${analysis.loop2.decision.recommendedMode}`);
+  console.log(`   ${analysis.loop2.decision.reason}`);
+  console.log(`   Priority: ${analysis.loop2.decision.priority}`);
+
+  // Execute actions if any
+  if (analysis.allActions.length === 0) {
+    console.log('\n✅ No actions needed - all zones are operating correctly');
+    return { success: true, actionsExecuted: 0, results: [] };
+  }
+
+  console.log(`\n⚡ Executing ${analysis.allActions.length} action(s)...`);
+
+  for (const action of analysis.allActions) {
+    try {
+      console.log(`\n   → ${action.zoneName} (Loop ${action.loop})`);
+      console.log(`     Current: ${action.currentMode} → New: ${action.newMode}`);
+      console.log(`     Reason: ${action.reason}`);
+      console.log(`     Priority: ${action.priority}`);
+
+      // Execute the action
+      const result = await setThermostatMode(action.deviceId, action.newMode);
+
+      console.log(`     ✅ Success`);
+
+      results.push({
+        ...action,
+        success: true,
+        result,
+        executedAt: new Date().toISOString()
+      });
+
+      // Small delay between commands to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+    } catch (error) {
+      console.log(`     ❌ Failed: ${error.message}`);
+
+      results.push({
+        ...action,
+        success: false,
+        error: error.message,
+        executedAt: new Date().toISOString()
+      });
+    }
+  }
+
+  const successCount = results.filter(r => r.success).length;
+  console.log(`\n📊 Completed: ${successCount}/${analysis.allActions.length} actions successful`);
+
+  // Save to control log
+  await saveControlLog({
+    timestamp: new Date().toISOString(),
+    analysis: {
+      loop1: {
+        mode: analysis.loop1.decision.recommendedMode,
+        reason: analysis.loop1.decision.reason,
+        priority: analysis.loop1.decision.priority
+      },
+      loop2: {
+        mode: analysis.loop2.decision.recommendedMode,
+        reason: analysis.loop2.decision.reason,
+        priority: analysis.loop2.decision.priority
+      }
+    },
+    actionsPlanned: analysis.allActions.length,
+    actionsExecuted: successCount,
+    results
+  });
+
+  return {
+    success: successCount === analysis.allActions.length,
+    actionsExecuted: successCount,
+    results
+  };
+}
+
+/**
  * Main polling function
  */
 async function poll() {
@@ -572,6 +743,36 @@ async function poll() {
       });
 
       await updateGoogleSheet(temperatureMap);
+    }
+
+    // Run HVAC loop control logic
+    console.log('');
+    if (successCount === DEVICES.length) {
+      // Only run control logic if we successfully got data from all devices
+      try {
+        // Prepare device data for analysis
+        const devicesDataForAnalysis = {};
+        for (const deviceConfig of DEVICES) {
+          const deviceData = data.devices[deviceConfig.id];
+          if (deviceData && deviceData.readings.length > 0) {
+            const latestReading = deviceData.readings[deviceData.readings.length - 1];
+            devicesDataForAnalysis[deviceConfig.location] = latestReading;
+          }
+        }
+
+        // Analyze all loops
+        const analysis = analyzeAllLoops(devicesDataForAnalysis);
+
+        // Execute recommended actions
+        await executeControlActions(analysis);
+      } catch (error) {
+        console.error('❌ Error in HVAC control logic:', error.message);
+        if (error.stack) {
+          console.error(error.stack);
+        }
+      }
+    } else {
+      console.log('⏭️  Skipping HVAC control logic (not all devices reported data)');
     }
 
     console.log('');

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import TufteDashboard from './components/TufteDashboard';
 import TufteHistory from './components/TufteHistory';
-import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, fetchLockStatus, fetchPlugStatus, updateControl, toggleLight, toggleLock, togglePlug, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES, ZONES } from './services/sheets';
+import AdminPanel from './components/AdminPanel';
+import { fetchPanelStatus, fetchLogHistory, fetchLightStatus, fetchLockStatus, fetchPlugStatus, updateControl, toggleLight, toggleLock, triggerHvacWebhook, togglePlug, MOCK_PANEL_DATA, LIGHT_ONLY_ZONES, ZONES } from './services/sheets';
 import { controlThermostat, isSmartThingsAvailable } from './services/smartthings';
-import { initializeAuth, signIn, signOut, isAuthenticated } from './services/auth';
-import { isOAuthCallback, handleOAuthCallback } from './services/auth';
+import { initializeAuth, signIn, signOut, isAuthenticated, isOAuthCallback, handleOAuthCallback } from './services/auth';
 import './App.css';
 
 function App() {
@@ -16,6 +16,7 @@ function App() {
   const [locks, setLocks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
     initializeAuth()
@@ -522,6 +523,12 @@ function App() {
         >
           History
         </button>
+        <button
+          onClick={() => setShowAdminPanel(true)}
+          title="HVAC Loop Control Admin"
+        >
+          Admin
+        </button>
 
         <div className="nav-actions">
           {!authenticated ? (
@@ -538,6 +545,10 @@ function App() {
           </button>
         </div>
       </nav>
+
+      {showAdminPanel && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
     useEffect(() => {
