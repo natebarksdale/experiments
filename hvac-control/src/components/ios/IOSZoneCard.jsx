@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { LOCK_CONFIG } from '../../services/sheets';
+import SmartSparkline from '../SmartSparkline';
+import { LOCK_CONFIG, ZONE_DEVICE_MAP } from '../../services/sheets';
 import './IOSZoneCard.css';
 
 export default function IOSZoneCard({ zone, lights, plugs, locks, onClick }) {
@@ -109,6 +110,20 @@ export default function IOSZoneCard({ zone, lights, plugs, locks, onClick }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Sparkline + Temperature History */}
+      {hasHvac && ZONE_DEVICE_MAP[zone.id] && (
+        <div className="ios-card__sparkline-section">
+          <div className="ios-card__sparkline">
+            <SmartSparkline
+              deviceId={ZONE_DEVICE_MAP[zone.id]}
+              width={80}
+              height={24}
+              showLights={true}
+            />
+          </div>
         </div>
       )}
 

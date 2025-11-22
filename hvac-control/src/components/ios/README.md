@@ -75,4 +75,4 @@ ios/
 - The original Tufte design remains fully intact in `/src/components/`
 - Both designs share the same backend services and state management
 - Switch between designs at any time without losing data or state
-- Sparklines were intentionally omitted from this design as they didn't fit the iOS aesthetic
+- Sparklines are now integrated and aligned with the middle third of the viewport on iPhone portrait for a clean grid layout
