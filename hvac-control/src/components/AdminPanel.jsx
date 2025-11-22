@@ -56,6 +56,8 @@ export default function AdminPanel({ onClose }) {
   // Load control log
   useEffect(() => {
     loadControlLog();
+    const interval = setInterval(loadControlLog, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
   }, []);
 
   async function loadControlLog() {
@@ -124,6 +126,45 @@ export default function AdminPanel({ onClose }) {
   const recentLogs = controlLog?.logs?.slice(0, 10) || [];
   const latestAnalysis = controlLog?.logs?.[0];
 
+  // Determine if reset buttons should be shown
+  const loop1NeedsRebalance = latestAnalysis?.analysis?.loop1?.actions?.length > 0 ||
+                               latestAnalysis?.analysis?.loop1?.priority === 'high';
+  const loop2NeedsRebalance = latestAnalysis?.analysis?.loop2?.actions?.length > 0 ||
+                               latestAnalysis?.analysis?.loop2?.priority === 'high';
+
+  // Helper to render loop state metrics
+  function renderLoopState(loopData, loopConfig) {
+    if (!loopData) return null;
+
+    const zones = loopData.zones || [];
+    const activeZones = zones.filter(z => z.active && !z.missing).length;
+    const satisfiedZones = zones.filter(z => z.satisfied && !z.missing).length;
+    const totalZones = loopConfig.zones.length;
+
+    return (
+      <div className="loop-state-metrics">
+        <div className="state-metric">
+          <span className="metric-label">Mode</span>
+          <span className="metric-value mode-badge">{loopData.decision?.recommendedMode || 'unknown'}</span>
+        </div>
+        <div className="state-metric">
+          <span className="metric-label">Active</span>
+          <span className="metric-value">{activeZones}/{totalZones}</span>
+        </div>
+        <div className="state-metric">
+          <span className="metric-label">Satisfied</span>
+          <span className="metric-value">{satisfiedZones}/{totalZones}</span>
+        </div>
+        {loopData.decision?.maxDelta > 0 && (
+          <div className="state-metric">
+            <span className="metric-label">Max Δ</span>
+            <span className="metric-value delta-value">{loopData.decision.maxDelta.toFixed(1)}°</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="admin-panel-overlay"
@@ -149,102 +190,86 @@ export default function AdminPanel({ onClose }) {
 
         <div className="admin-panel__content">
           {/* Explanation */}
-          <section className="admin-section">
-            <h3>How It Works</h3>
-            <div className="explanation">
-              <p>
-                The HVAC system has two independent loops. Each loop can only operate in one mode at a time
-                (heating or cooling). The control logic automatically monitors all zones and makes adjustments
-                to ensure:
-              </p>
-              <ul>
-                <li>Units don't heat or cool beyond their target temperatures</li>
-                <li>All units on a loop are aligned with the loop's mode</li>
-                <li>When zones have conflicting needs, we prioritize based on temperature deltas</li>
-                <li>Zones with large temperature differences get higher priority</li>
-              </ul>
-              <div className="loop-info">
-                <div className="loop-card">
-                  <h4>Loop 1: Front</h4>
-                  <ul>
-                    {LOOP_CONFIG[1].zones.map(zone => (
-                      <li key={zone}>{zone}</li>
-                    ))}
-                  </ul>
+          <section className="admin-section explanation-section">
+            <p className="explanation-text">
+              Two independent loops automatically manage heating/cooling. Each loop operates in one mode at a time,
+              prioritizing zones with the largest temperature differences from their targets.
+            </p>
+            <div className="loop-zones-grid">
+              <div className="loop-zones-card">
+                <h4>Loop 1: Front</h4>
+                <div className="zone-chips">
+                  {LOOP_CONFIG[1].zones.map(zone => (
+                    <span key={zone} className="zone-chip">{zone}</span>
+                  ))}
                 </div>
-                <div className="loop-card">
-                  <h4>Loop 2: Back</h4>
-                  <ul>
-                    {LOOP_CONFIG[2].zones.map(zone => (
-                      <li key={zone}>{zone}</li>
-                    ))}
-                  </ul>
+              </div>
+              <div className="loop-zones-card">
+                <h4>Loop 2: Back</h4>
+                <div className="zone-chips">
+                  {LOOP_CONFIG[2].zones.map(zone => (
+                    <span key={zone} className="zone-chip">{zone}</span>
+                  ))}
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Current Status */}
+          {/* Current Loop States */}
           {latestAnalysis && (
             <section className="admin-section">
-              <h3>Current Status</h3>
-              <div className="status-timestamp">
-                Last analyzed: {formatTimestamp(latestAnalysis.timestamp)}
-              </div>
-              <div className="loop-status">
-                <div className="loop-status-card">
-                  <h4>Loop 1: Front</h4>
-                  <div className="loop-mode">
-                    Mode: <strong>{latestAnalysis.analysis.loop1.mode}</strong>
-                  </div>
-                  <div className="loop-reason">
-                    {latestAnalysis.analysis.loop1.reason}
-                  </div>
-                  <PriorityBadge priority={latestAnalysis.analysis.loop1.priority} />
-                </div>
-                <div className="loop-status-card">
-                  <h4>Loop 2: Back</h4>
-                  <div className="loop-mode">
-                    Mode: <strong>{latestAnalysis.analysis.loop2.mode}</strong>
-                  </div>
-                  <div className="loop-reason">
-                    {latestAnalysis.analysis.loop2.reason}
-                  </div>
-                  <PriorityBadge priority={latestAnalysis.analysis.loop2.priority} />
+              <div className="section-header-with-timestamp">
+                <h3>Loop States</h3>
+                <div className="status-timestamp">
+                  {formatTimestamp(latestAnalysis.timestamp)}
                 </div>
               </div>
-              {latestAnalysis.actionsExecuted > 0 && (
-                <div className="actions-summary">
-                  Executed {latestAnalysis.actionsExecuted} of {latestAnalysis.actionsPlanned} planned action(s)
+
+              <div className="loop-states-grid">
+                {/* Loop 1 */}
+                <div className="loop-state-card">
+                  <div className="loop-state-header">
+                    <h4>Loop 1: Front</h4>
+                    <PriorityBadge priority={latestAnalysis.analysis.loop1.decision?.priority || 'low'} />
+                  </div>
+                  {renderLoopState(latestAnalysis.analysis.loop1, LOOP_CONFIG[1])}
+                  <div className="loop-state-description">
+                    {latestAnalysis.analysis.loop1.decision?.reason || 'No data available'}
+                  </div>
+                  {loop1NeedsRebalance && (
+                    <button
+                      className="rebalance-button-inline"
+                      onClick={() => handleRebalance(1)}
+                      disabled={rebalancing.loop1}
+                    >
+                      {rebalancing.loop1 ? 'Rebalancing...' : 'Rebalance Loop'}
+                    </button>
+                  )}
                 </div>
-              )}
+
+                {/* Loop 2 */}
+                <div className="loop-state-card">
+                  <div className="loop-state-header">
+                    <h4>Loop 2: Back</h4>
+                    <PriorityBadge priority={latestAnalysis.analysis.loop2.decision?.priority || 'low'} />
+                  </div>
+                  {renderLoopState(latestAnalysis.analysis.loop2, LOOP_CONFIG[2])}
+                  <div className="loop-state-description">
+                    {latestAnalysis.analysis.loop2.decision?.reason || 'No data available'}
+                  </div>
+                  {loop2NeedsRebalance && (
+                    <button
+                      className="rebalance-button-inline"
+                      onClick={() => handleRebalance(2)}
+                      disabled={rebalancing.loop2}
+                    >
+                      {rebalancing.loop2 ? 'Rebalancing...' : 'Rebalance Loop'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </section>
           )}
-
-          {/* Manual Rebalance */}
-          <section className="admin-section">
-            <h3>Manual Rebalance</h3>
-            <p className="section-description">
-              Trigger an immediate rebalance of a loop based on current conditions.
-              This will analyze the loop and make any necessary adjustments.
-            </p>
-            <div className="rebalance-buttons">
-              <button
-                className="rebalance-button"
-                onClick={() => handleRebalance(1)}
-                disabled={rebalancing.loop1}
-              >
-                {rebalancing.loop1 ? 'Rebalancing...' : 'Rebalance Loop 1 (Front)'}
-              </button>
-              <button
-                className="rebalance-button"
-                onClick={() => handleRebalance(2)}
-                disabled={rebalancing.loop2}
-              >
-                {rebalancing.loop2 ? 'Rebalancing...' : 'Rebalance Loop 2 (Back)'}
-              </button>
-            </div>
-          </section>
 
           {/* Error Display */}
           {error && (
