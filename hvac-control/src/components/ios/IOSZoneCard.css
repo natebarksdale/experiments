@@ -168,6 +168,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Sparkline Section */
+.ios-card__sparkline-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--ios-space-2) 0;
+  margin: var(--ios-space-2) 0;
+}
+
+.ios-card__sparkline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Accessories */
 .ios-card__accessories {
   display: flex;
@@ -212,5 +227,17 @@
 
   .ios-card__accessories {
     gap: var(--ios-space-3);
+  }
+
+  /* Align sparkline with middle third on iPhone portrait */
+  .ios-card__sparkline-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .ios-card__sparkline {
+    grid-column: 2 / 3; /* Position in middle column */
   }
 }
