@@ -136,6 +136,60 @@
   z-index: 1;
 }
 
+/* Loop Info */
+.modern-loop-info {
+  padding: var(--modern-s4) var(--modern-s5);
+  background: var(--modern-yellow-pale);
+  border-bottom: 3px solid var(--modern-black);
+}
+
+.modern-loop-info__badge {
+  display: flex;
+  align-items: center;
+  gap: var(--modern-s3);
+  margin-bottom: var(--modern-s2);
+}
+
+.modern-loop-info__label {
+  font-family: var(--modern-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--modern-gray);
+}
+
+.modern-loop-info__mode {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 3px solid var(--modern-black);
+  font-family: var(--modern-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.modern-loop-info__mode--heat {
+  background: var(--modern-red);
+  color: var(--modern-white);
+}
+
+.modern-loop-info__mode--cool {
+  background: var(--modern-blue);
+  color: var(--modern-white);
+}
+
+.modern-loop-info__zones {
+  font-family: var(--modern-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--modern-black);
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Content */
 .modern-modal__content {
   flex: 1;
