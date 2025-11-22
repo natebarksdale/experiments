@@ -120,22 +120,41 @@ async function handleOAuthCallback(request, env, origin) {
 
     const tokens = await tokenResponse.json();
 
+    // Validate we have a refresh token (required for persistent sessions)
+    if (!tokens.refresh_token) {
+      console.error('OAuth: No refresh token received from Google');
+      throw new Error('No refresh token received. Make sure OAuth consent prompt is set to "consent".');
+    }
+
+    // Validate session storage is configured
+    if (!env.SESSIONS) {
+      console.error('OAuth: SESSIONS KV namespace not configured');
+      throw new Error('Session storage not configured. Please bind a KV namespace named SESSIONS to this worker.');
+    }
+
     // Generate session ID
     const sessionId = crypto.randomUUID();
 
     // Store refresh token in KV (expires in 6 months)
-    if (tokens.refresh_token && env.SESSIONS) {
-      await env.SESSIONS.put(
-        `session:${sessionId}`,
-        JSON.stringify({
-          refresh_token: tokens.refresh_token,
-          access_token: tokens.access_token,
-          expires_at: Date.now() + (tokens.expires_in * 1000),
-          created_at: Date.now()
-        }),
-        { expirationTtl: 60 * 60 * 24 * 180 } // 6 months
-      );
+    console.log('Storing session:', sessionId.substring(0, 20) + '...');
+    await env.SESSIONS.put(
+      `session:${sessionId}`,
+      JSON.stringify({
+        refresh_token: tokens.refresh_token,
+        access_token: tokens.access_token,
+        expires_at: Date.now() + (tokens.expires_in * 1000),
+        created_at: Date.now()
+      }),
+      { expirationTtl: 60 * 60 * 24 * 180 } // 6 months
+    );
+
+    // Verify the session was stored
+    const storedSession = await env.SESSIONS.get(`session:${sessionId}`);
+    if (!storedSession) {
+      console.error('OAuth: Failed to verify session storage');
+      throw new Error('Failed to store session. Please check KV namespace configuration.');
     }
+    console.log('Session stored and verified successfully');
 
     // Redirect back to the app with session ID and state
     // The app will extract these from the URL and store the session

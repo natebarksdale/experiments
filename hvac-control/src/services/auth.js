@@ -9,6 +9,19 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 // OAuth redirect URI (should match worker configuration)
 const REDIRECT_URI = `${PROXY_URL}/auth/callback`;
 
+// Check configuration on module load
+if (!CLIENT_ID || !PROXY_URL) {
+  console.warn('⚠️ Authentication not configured:');
+  if (!CLIENT_ID) {
+    console.warn('  - Missing VITE_GOOGLE_CLIENT_ID');
+  }
+  if (!PROXY_URL) {
+    console.warn('  - Missing VITE_PROXY_URL');
+  }
+  console.warn('  → Create a .env file with these values to enable authentication.');
+  console.warn('  → See .env.example for template.');
+}
+
 let sessionId = null;
 let accessToken = null;
 let tokenExpiresAt = null;
@@ -49,12 +62,14 @@ export function initializeAuth() {
  */
 export function signIn() {
   if (!CLIENT_ID) {
-    throw new Error('Google Client ID not configured');
+    throw new Error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID in your .env file.');
   }
 
   if (!PROXY_URL) {
-    throw new Error('Proxy URL not configured - set VITE_PROXY_URL');
+    throw new Error('Proxy URL not configured. Please set VITE_PROXY_URL in your .env file to your Cloudflare Worker URL.');
   }
+
+  console.log('Starting OAuth flow with:', { CLIENT_ID: CLIENT_ID.substring(0, 20) + '...', PROXY_URL });
 
   // Generate random state for CSRF protection
   const state = crypto.randomUUID();
@@ -129,26 +144,54 @@ export async function checkSession() {
     throw new Error('No session');
   }
 
+  if (!PROXY_URL) {
+    console.error('PROXY_URL not configured - cannot check session');
+    throw new Error('Authentication proxy not configured. Please set VITE_PROXY_URL in your environment.');
+  }
+
   try {
+    console.log('Checking session with proxy:', PROXY_URL);
+    console.log('Session ID (first 20 chars):', sessionId.substring(0, 20) + '...');
+
     const response = await fetch(`${PROXY_URL}/auth/session`, {
       headers: {
         'Authorization': `Bearer ${sessionId}`
       }
     });
 
+    console.log('Session check response status:', response.status);
+
     if (!response.ok) {
+      let errorDetails;
+      try {
+        errorDetails = await response.json();
+      } catch (e) {
+        errorDetails = await response.text();
+      }
+      console.error('Session check failed:', {
+        status: response.status,
+        details: errorDetails
+      });
       throw new Error('Session invalid or expired');
     }
 
     const data = await response.json();
+    console.log('Session check response:', {
+      valid: data.valid,
+      hasAccessToken: !!data.accessToken,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null
+    });
 
     if (!data.valid) {
+      console.error('Session marked as invalid by proxy');
       throw new Error('Session invalid');
     }
 
     // Update access token
     accessToken = data.accessToken;
     tokenExpiresAt = data.expiresAt;
+
+    console.log('Session refreshed successfully, token expires:', new Date(tokenExpiresAt).toISOString());
 
     // Schedule next refresh (5 minutes before expiry)
     scheduleTokenRefresh();
@@ -220,19 +263,32 @@ export async function signOut() {
  * Automatically refreshes if expired
  */
 export async function getAccessToken() {
+  console.log('getAccessToken called - current state:', {
+    hasSessionId: !!sessionId,
+    hasAccessToken: !!accessToken,
+    tokenExpiresAt: tokenExpiresAt ? new Date(tokenExpiresAt).toISOString() : null,
+    isTokenValid: accessToken && tokenExpiresAt && tokenExpiresAt > Date.now()
+  });
+
   if (!sessionId) {
+    console.warn('getAccessToken: No session ID found');
     return null;
   }
 
   // If token is still valid, return it
   if (accessToken && tokenExpiresAt && tokenExpiresAt > Date.now()) {
+    console.log('getAccessToken: Returning cached access token');
     return accessToken;
   }
 
   // Token expired or not loaded, check session
+  console.log('getAccessToken: Token expired or not loaded, checking session...');
   try {
-    return await checkSession();
+    const token = await checkSession();
+    console.log('getAccessToken: Successfully refreshed token');
+    return token;
   } catch (err) {
+    console.error('getAccessToken: Failed to refresh token:', err);
     return null;
   }
 }
