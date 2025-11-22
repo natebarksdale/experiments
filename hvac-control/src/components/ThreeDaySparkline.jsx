@@ -66,7 +66,7 @@ export default function ThreeDaySparkline({ deviceId, width = 200, height = 60 }
     }
 
     // Calculate high/low for room temp
-    const roomTemps = filteredReadings.map(r => r.value ?? r.temperature?.value).filter(v => v != null);
+    const roomTemps = filteredReadings.map(r => r.value ?? r.temperature?.value ?? r.temperature).filter(v => v != null);
     const roomHigh = Math.max(...roomTemps);
     const roomLow = Math.min(...roomTemps);
 
@@ -152,7 +152,7 @@ function SparklineChart({ roomReadings, outsideReadings, timeRange, width, heigh
   const allValues = [];
 
   roomReadings.forEach(r => {
-    const val = r.value ?? r.temperature?.value;
+    const val = r.value ?? r.temperature?.value ?? r.temperature;
     if (val != null) allValues.push(val);
   });
 
@@ -180,8 +180,8 @@ function SparklineChart({ roomReadings, outsideReadings, timeRange, width, heigh
     const t1 = new Date(d1.timestamp);
     const t2 = new Date(d2.timestamp);
 
-    const v1 = d1.value ?? d1.temperature?.value;
-    const v2 = d2.value ?? d2.temperature?.value;
+    const v1 = d1.value ?? d1.temperature?.value ?? d1.temperature;
+    const v2 = d2.value ?? d2.temperature?.value ?? d2.temperature;
 
     if (v1 == null || v2 == null) continue;
 
