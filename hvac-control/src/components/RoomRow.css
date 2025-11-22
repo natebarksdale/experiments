@@ -297,46 +297,48 @@
 
   .room-row__hvac {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: auto 1fr auto;
     grid-template-rows: auto auto;
     gap: 4px;
     align-items: center;
   }
 
-  /* Column 1: State + Name */
+  /* Row 1: State + Name on same line */
   .room-row__state {
     grid-column: 1 / 2;
     grid-row: 1 / 2;
     justify-self: start;
     font-size: 0.875rem;
+    margin-right: 4px;
   }
 
   .room-row__name {
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
     justify-self: start;
     font-size: 0.8125rem;
   }
 
-  /* Column 2: Sparkline + Temp (middle third) */
+  /* Row 2: Sparkline + Temp on same line */
   .room-row__sparkline {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
-    justify-self: center;
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+    justify-self: start;
     width: 50px;
+    margin-right: 4px;
   }
 
   .room-row__temp {
     grid-column: 2 / 3;
     grid-row: 2 / 3;
-    justify-self: center;
+    justify-self: start;
     display: flex;
     flex-direction: row;
     align-items: baseline;
     gap: 4px;
   }
 
-  /* Column 3: Light indicators */
+  /* Column 3: Light indicators (spanning both rows) */
   .room-row__lights {
     grid-column: 3 / 4;
     grid-row: 1 / 3;
