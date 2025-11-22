@@ -787,7 +787,7 @@ export async function fetchLogHistory(daysBack = 7) {
         };
       })
       .filter(entry => {
-        // Filter out null entries and entries older than 7 days
+        // Filter out null entries and entries older than specified days
         return entry && entry.parsed && entry.timestamp >= sevenDaysAgo;
       })
       .sort((a, b) => {
@@ -800,6 +800,44 @@ export async function fetchLogHistory(daysBack = 7) {
     console.error('Error fetching log history:', error);
     return [];
   }
+}
+
+/**
+ * Extract temperature history for a specific zone from log data
+ * Used for sparkline visualization
+ * @param {string} zoneName - Name of zone (e.g., 'Basement', 'NBs Office')
+ * @param {array} logHistory - Parsed log history from fetchLogHistory()
+ * @param {number} hoursBack - How many hours of history to include (default: 24)
+ * @returns {array} Array of {timestamp, temperature, mode, power} objects
+ */
+export function extractZoneTemperatureHistory(zoneName, logHistory, hoursBack = 24) {
+  if (!logHistory || !zoneName) return [];
+
+  const now = new Date();
+  const cutoffTime = new Date(now.getTime() - hoursBack * 60 * 60 * 1000);
+
+  const zoneData = logHistory
+    .filter(entry => entry.timestamp >= cutoffTime)
+    .map(entry => {
+      // Find this zone in the parsed log entry
+      const zoneEntry = entry.parsed?.find(z =>
+        z.name?.toLowerCase() === zoneName.toLowerCase() ||
+        z.name?.toLowerCase().replace(/\s+/g, '') === zoneName.toLowerCase().replace(/\s+/g, '')
+      );
+
+      if (!zoneEntry || zoneEntry.temperature == null) return null;
+
+      return {
+        timestamp: entry.timestamp,
+        temperature: zoneEntry.temperature,
+        mode: zoneEntry.mode,
+        power: zoneEntry.power,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.timestamp - b.timestamp); // Sort chronologically for sparkline
+
+  return zoneData;
 }
 
 /**

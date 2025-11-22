@@ -132,6 +132,7 @@ export default function IOSDashboard({
                   lights={getZoneLights(zone)}
                   plugs={getZonePlugs(zone)}
                   locks={getZoneLocks(zone)}
+                  logHistory={logs}
                   onClick={() => handleZoneClick(zone)}
                 />
               ))}

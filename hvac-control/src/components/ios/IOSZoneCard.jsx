@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import SmartSparkline from '../SmartSparkline';
-import { LOCK_CONFIG, ZONE_DEVICE_MAP } from '../../services/sheets';
+import { LOCK_CONFIG } from '../../services/sheets';
 import './IOSZoneCard.css';
 
-export default function IOSZoneCard({ zone, lights, plugs, locks, onClick }) {
+export default function IOSZoneCard({ zone, lights, plugs, locks, logHistory = [], onClick }) {
   const { name, temperature, preferredState, hasHvac, hasOverride, pendingChange } = zone;
   const { power, mode, target } = preferredState || {};
 
@@ -84,10 +84,11 @@ export default function IOSZoneCard({ zone, lights, plugs, locks, onClick }) {
       {hasHvac && (
         <div className="ios-card__sparkline-temp-row">
           {/* Sparkline */}
-          {ZONE_DEVICE_MAP[zone.id] && (
+          {hasHvac && (
             <div className="ios-card__sparkline">
               <SmartSparkline
-                deviceId={ZONE_DEVICE_MAP[zone.id]}
+                zoneName={zone.unitName || zone.name}
+                logHistory={logHistory}
                 width={80}
                 height={24}
                 showLights={true}
