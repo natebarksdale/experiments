@@ -3,6 +3,14 @@
 
 import { getAccessToken } from './auth';
 
+/**
+ * Get the session ID from localStorage
+ * The session ID is used to authenticate with the proxy (not the access token)
+ */
+function getSessionId() {
+  return localStorage.getItem('session_id');
+}
+
 // Proxy URL - update this after deploying your Cloudflare Worker
 // Example: 'https://hvac-control-proxy.your-subdomain.workers.dev'
 const PROXY_URL = import.meta.env.VITE_PROXY_URL || '';
@@ -25,8 +33,10 @@ async function proxyRequest(path, options = {}) {
     throw new Error('Proxy URL not configured');
   }
 
-  const token = await getAccessToken();
-  if (!token) {
+  // Use session ID (not access token) to authenticate with proxy
+  // The proxy will look up the session and use the stored access token
+  const sessionId = getSessionId();
+  if (!sessionId) {
     throw new Error('Not authenticated');
   }
 
@@ -36,7 +46,7 @@ async function proxyRequest(path, options = {}) {
     ...options,
     headers: {
       ...options.headers,
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${sessionId}`,
       'Content-Type': 'application/json'
     }
   });
@@ -77,8 +87,8 @@ export async function proxyIFTTT(eventName, data = {}) {
  * Returns user info if token is valid
  */
 export async function verifyProxyAuth() {
-  const token = await getAccessToken();
-  if (!token) {
+  const sessionId = getSessionId();
+  if (!sessionId) {
     return { valid: false };
   }
 
