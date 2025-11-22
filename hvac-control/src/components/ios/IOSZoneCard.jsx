@@ -67,62 +67,40 @@ export default function IOSZoneCard({ zone, lights, plugs, locks, onClick }) {
         />
       )}
 
-      {/* Card Header */}
+      {/* Card Header - Indicator + Name */}
       <div className="ios-card__header">
+        {hasHvac && (
+          <span className={`ios-card__indicator ${power === 'on' ? `ios-card__indicator--${mode}` : 'ios-card__indicator--off'}`}>
+            {power === 'on' ? (mode === 'heat' ? '▲' : '▼') : '○'}
+          </span>
+        )}
         <h3 className="ios-card__name">{name}</h3>
         {hasOverride && (
           <span className="ios-card__badge">Override</span>
         )}
       </div>
 
-      {/* HVAC Display */}
+      {/* Sparkline + Temperature Display */}
       {hasHvac && (
-        <div className="ios-card__hvac">
-          <div className="ios-card__temp">
-            <span className="ios-card__temp-value">{temp}</span>
-            <span className="ios-card__temp-unit">°</span>
-          </div>
-
-          {power === 'on' && (
-            <div className="ios-card__status">
-              <div className={`ios-status-pill ios-status-pill--${mode}`}>
-                <span className="ios-status-pill__icon">
-                  {mode === 'heat' ? '▲' : '▼'}
-                </span>
-                <span className="ios-status-pill__text">
-                  {mode === 'heat' ? 'Heating' : 'Cooling'} to {target}°
-                </span>
-              </div>
-
-              {delta !== null && (
-                <span className="ios-card__delta">
-                  {delta > 0 ? `+${delta}°` : `${delta}°`}
-                </span>
-              )}
+        <div className="ios-card__sparkline-temp-row">
+          {/* Sparkline */}
+          {ZONE_DEVICE_MAP[zone.id] && (
+            <div className="ios-card__sparkline">
+              <SmartSparkline
+                deviceId={ZONE_DEVICE_MAP[zone.id]}
+                width={80}
+                height={24}
+                showLights={true}
+              />
             </div>
           )}
 
-          {power === 'off' && (
-            <div className="ios-card__status">
-              <div className="ios-status-pill ios-status-pill--off">
-                <span className="ios-status-pill__icon">○</span>
-                <span className="ios-status-pill__text">Off</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Sparkline + Temperature History */}
-      {hasHvac && ZONE_DEVICE_MAP[zone.id] && (
-        <div className="ios-card__sparkline-section">
-          <div className="ios-card__sparkline">
-            <SmartSparkline
-              deviceId={ZONE_DEVICE_MAP[zone.id]}
-              width={80}
-              height={24}
-              showLights={true}
-            />
+          {/* Temperature Display */}
+          <div className="ios-card__temp-display">
+            <span className="ios-card__temp-value">{temp}°</span>
+            {power === 'on' && target && (
+              <span className="ios-card__temp-target">→ {target}°</span>
+            )}
           </div>
         </div>
       )}

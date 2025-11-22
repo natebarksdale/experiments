@@ -63,8 +63,27 @@
 .ios-card__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--ios-space-2);
   margin-bottom: var(--ios-space-2);
+}
+
+.ios-card__indicator {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ios-card__indicator--heat {
+  color: var(--ios-orange);
+}
+
+.ios-card__indicator--cool {
+  color: var(--ios-teal);
+}
+
+.ios-card__indicator--off {
+  color: var(--ios-gray);
 }
 
 .ios-card__name {
@@ -73,6 +92,7 @@
   letter-spacing: -0.01em;
   margin: 0;
   color: #000;
+  flex: 1;
 }
 
 .ios-card__badge {
@@ -88,99 +108,42 @@
   letter-spacing: 0.02em;
 }
 
-/* HVAC Display */
-.ios-card__hvac {
+/* Sparkline + Temperature Row */
+.ios-card__sparkline-temp-row {
   display: flex;
-  flex-direction: column;
-  gap: var(--ios-space-2);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ios-space-3);
   margin-bottom: var(--ios-space-2);
 }
 
-.ios-card__temp {
+.ios-card__sparkline {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ios-card__temp-display {
   display: flex;
   align-items: baseline;
-  gap: 2px;
+  gap: var(--ios-space-2);
+  flex-shrink: 0;
 }
 
 .ios-card__temp-value {
-  font-size: 36px;
-  font-weight: 300;
+  font-size: 24px;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
   color: #000;
   font-variant-numeric: tabular-nums;
 }
 
-.ios-card__temp-unit {
-  font-size: 20px;
-  font-weight: 300;
-  color: var(--ios-gray);
-}
-
-.ios-card__status {
-  display: flex;
-  align-items: center;
-  gap: var(--ios-space-2);
-  flex-wrap: wrap;
-}
-
-/* Status Pills */
-.ios-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ios-space-1);
-  padding: var(--ios-space-1) var(--ios-space-3);
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  transition: all 0.2s ease;
-}
-
-.ios-status-pill--heat {
-  background: rgba(255, 149, 0, 0.15);
-  color: var(--ios-orange);
-}
-
-.ios-status-pill--cool {
-  background: rgba(90, 200, 250, 0.15);
-  color: var(--ios-teal);
-}
-
-.ios-status-pill--off {
-  background: var(--ios-gray6);
-  color: var(--ios-gray);
-}
-
-.ios-status-pill__icon {
-  font-size: 10px;
-  line-height: 1;
-}
-
-.ios-status-pill__text {
-  line-height: 1;
-}
-
-.ios-card__delta {
-  font-size: 13px;
-  font-weight: 600;
+.ios-card__temp-target {
+  font-size: 16px;
+  font-weight: 500;
   color: var(--ios-gray);
   font-variant-numeric: tabular-nums;
-}
-
-/* Sparkline Section */
-.ios-card__sparkline-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: var(--ios-space-2) 0;
-  margin: var(--ios-space-2) 0;
-}
-
-.ios-card__sparkline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Accessories */
@@ -217,27 +180,21 @@
     padding: var(--ios-space-3);
   }
 
-  .ios-card__temp-value {
-    font-size: 40px;
-  }
-
-  .ios-card__temp-unit {
-    font-size: 24px;
-  }
-
   .ios-card__accessories {
     gap: var(--ios-space-3);
   }
 
-  /* Narrower sparkline on iPhone portrait */
-  .ios-card__sparkline-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
+  /* Adjust sparkline scale on iPhone portrait */
   .ios-card__sparkline {
     transform: scale(0.7);
-    transform-origin: center;
+    transform-origin: left center;
+  }
+
+  .ios-card__temp-value {
+    font-size: 20px;
+  }
+
+  .ios-card__temp-target {
+    font-size: 14px;
   }
 }
