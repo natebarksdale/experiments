@@ -7,14 +7,14 @@ compatibility_date = "2024-01-01"
 
 # Account details - add your account_id after creating a Cloudflare account
 # Get this from: https://dash.cloudflare.com/ → Workers & Pages → Overview → Account ID
-# account_id = "your-account-id-here"
+# account_id = "249f59593886bddaa03326538661d8f5"
 
 # KV namespace for storing temperature data and installation details
 # Create this using: wrangler kv:namespace create "SMARTAPP_STORAGE" --config wrangler-smartapp.toml
 # Then uncomment and add the ID below:
 # [[kv_namespaces]]
 # binding = "SMARTAPP_STORAGE"
-# id = "your-kv-namespace-id-here"
+# id = "6bdb56f9413f49b3a30f84b0b282c115"
 
 # Workers are free up to 100,000 requests per day
 # KV is free up to 100,000 read operations per day
