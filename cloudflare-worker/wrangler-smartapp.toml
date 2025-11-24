@@ -1,0 +1,30 @@
+# Cloudflare Worker Configuration for SmartThings SmartApp Webhook
+# This worker receives real-time temperature updates from SmartThings
+
+name = "hvac-monitor"
+main = "smartapp-webhook-worker.js"
+compatibility_date = "2024-01-01"
+
+# Account details - add your account_id after creating a Cloudflare account
+# Get this from: https://dash.cloudflare.com/ → Workers & Pages → Overview → Account ID
+# account_id = "your-account-id-here"
+
+# KV namespace for storing temperature data and installation details
+# Create this using: wrangler kv:namespace create "SMARTAPP_STORAGE" --config wrangler-smartapp.toml
+# Then uncomment and add the ID below:
+# [[kv_namespaces]]
+# binding = "SMARTAPP_STORAGE"
+# id = "your-kv-namespace-id-here"
+
+# Workers are free up to 100,000 requests per day
+# KV is free up to 100,000 read operations per day
+# https://developers.cloudflare.com/workers/platform/pricing/
+
+# Optional: Google Sheets webhook URL for syncing temperature data
+# Set this using wrangler:
+#   wrangler secret put GOOGLE_SHEETS_WEBHOOK_URL --config wrangler-smartapp.toml
+
+# After deployment, your worker will be available at:
+# https://hvac-monitor.<your-subdomain>.workers.dev
+#
+# Use this URL when registering the SmartApp in SmartThings Developer Workspace
