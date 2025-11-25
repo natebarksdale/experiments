@@ -1,0 +1,13 @@
+{
+  "lifecycle": "CONFIGURATION",
+  "executionId": "test-exec-789",
+  "locale": "en",
+  "version": "1.0.0",
+  "configurationData": {
+    "installedAppId": "test-app-123",
+    "phase": "PAGE",
+    "pageId": "selectDevices",
+    "previousPageId": "",
+    "config": {}
+  }
+}
