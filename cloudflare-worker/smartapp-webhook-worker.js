@@ -3,6 +3,8 @@
 
 export default {
   async fetch(request, env, ctx) {
+    console.log('🚀 Worker received request:', request.method, request.url);
+
     const url = new URL(request.url);
     const path = url.pathname;
 
