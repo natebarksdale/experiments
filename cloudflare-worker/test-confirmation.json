@@ -1,0 +1,9 @@
+{
+  "lifecycle": "CONFIRMATION",
+  "executionId": "test-exec-123",
+  "locale": "en",
+  "version": "1.0.0",
+  "confirmationData": {
+    "confirmationUrl": "https://test-confirmation-url.example.com/verify"
+  }
+}
