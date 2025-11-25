@@ -12,9 +12,9 @@ compatibility_date = "2024-01-01"
 # KV namespace for storing temperature data and installation details
 # Create this using: wrangler kv:namespace create "SMARTAPP_STORAGE" --config wrangler-smartapp.toml
 # Then uncomment and add the ID below:
-# [[kv_namespaces]]
-# binding = "SMARTAPP_STORAGE"
-# id = "6bdb56f9413f49b3a30f84b0b282c115"
+[[kv_namespaces]]
+binding = "SMARTAPP_STORAGE"
+id = "6bdb56f9413f49b3a30f84b0b282c115"
 
 # Workers are free up to 100,000 requests per day
 # KV is free up to 100,000 read operations per day
