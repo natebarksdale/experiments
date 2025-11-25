@@ -1,582 +1,536 @@
-// Cloudflare Worker - SmartThings SmartApp Webhook Handler
-// Handles real-time temperature updates from SmartThings devices
+// smartapp-webhook-worker.js
 
 export default {
   async fetch(request, env, ctx) {
-    console.log('🚀 Worker received request:', request.method, request.url);
-
+    console.log(`🚀 Worker received ${request.method} request: ${request.url}`);
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return handleCORS();
     }
-
-    // Handle GET requests for temperature data
-    if (request.method === 'GET') {
+    if (request.method === "GET") {
       return handleGetRequest(path, env);
     }
-
-    // Handle POST requests from SmartThings
-    if (request.method === 'POST') {
-      return handleSmartThingsWebhook(request, env);
+    if (request.method === "POST") {
+      return handleSmartThingsWebhook(request, env, ctx);
     }
 
-    return new Response('Method not allowed', { status: 405 });
+    return new Response("Method not allowed", { status: 405 });
   }
 };
 
-/**
- * Handle GET requests for temperature data
- */
+// --- Configuration Constants ---
+
+// Define the capabilities and attributes we want to track
+const TRACKED_ATTRIBUTES = [
+  { capability: "temperatureMeasurement", attribute: "temperature" },
+  { capability: "thermostatMode", attribute: "thermostatMode" },
+  { capability: "thermostatOperatingState", attribute: "thermostatOperatingState" },
+  { capability: "thermostatCoolingSetpoint", attribute: "coolingSetpoint" },
+  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" },
+  { capability: "switch", attribute: "switch" }
+];
+
+// --- GET Request Handlers ---
+
 async function handleGetRequest(path, env) {
-  const origin = '*'; // You can restrict this to specific origins
-
-  // Get all current temperatures
-  if (path === '/temperatures') {
+  const origin = "*";
+  
+  // Endpoint: Get all current device states
+  if (path === "/temperatures" || path === "/devices") {
     if (!env.SMARTAPP_STORAGE) {
-      return new Response(JSON.stringify({
-        error: 'Storage not configured'
-      }), {
-        status: 500,
-        headers: corsHeaders(origin)
-      });
+      return errorResponse("Storage not configured", 500, origin);
     }
-
     try {
-      // List all temperature readings
-      const list = await env.SMARTAPP_STORAGE.list({ prefix: 'temp:' });
-      const temperatures = {};
-
+      const list = await env.SMARTAPP_STORAGE.list({ prefix: "device:" });
+      const devices = {};
+      
       for (const key of list.keys) {
-        const data = await env.SMARTAPP_STORAGE.get(key.name, 'json');
+        const data = await env.SMARTAPP_STORAGE.get(key.name, "json");
         if (data) {
-          const deviceId = key.name.replace('temp:', '');
-          temperatures[deviceId] = data;
+          // Key format is "device:deviceId"
+          const deviceId = key.name.substring(7); 
+          devices[deviceId] = data;
         }
       }
-
-      return new Response(JSON.stringify(temperatures), {
-        status: 200,
-        headers: corsHeaders(origin)
-      });
+      return successResponse(devices, origin);
     } catch (error) {
-      console.error('Error fetching temperatures:', error);
-      return new Response(JSON.stringify({
-        error: 'Failed to fetch temperatures',
-        message: error.message
-      }), {
-        status: 500,
-        headers: corsHeaders(origin)
-      });
+      console.error("Error fetching devices:", error);
+      return errorResponse("Failed to fetch devices", 500, origin, error.message);
     }
   }
 
-  // Get temperature for specific device
-  const deviceMatch = path.match(/^\/temperature\/(.+)$/);
+  // Endpoint: Get specific device
+  const deviceMatch = path.match(/^\/(temperature|device)\/(.+)$/);
   if (deviceMatch) {
-    const deviceId = deviceMatch[1];
-
-    if (!env.SMARTAPP_STORAGE) {
-      return new Response(JSON.stringify({
-        error: 'Storage not configured'
-      }), {
-        status: 500,
-        headers: corsHeaders(origin)
-      });
-    }
+    const deviceId = deviceMatch[2];
+    if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
 
     try {
-      const data = await env.SMARTAPP_STORAGE.get(`temp:${deviceId}`, 'json');
-
+      // Try new prefix first, fall back to old "temp:" if migration hasn't happened
+      let data = await env.SMARTAPP_STORAGE.get(`device:${deviceId}`, "json");
       if (!data) {
-        return new Response(JSON.stringify({
-          error: 'Device not found'
-        }), {
-          status: 404,
-          headers: corsHeaders(origin)
-        });
+        data = await env.SMARTAPP_STORAGE.get(`temp:${deviceId}`, "json");
       }
-
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: corsHeaders(origin)
-      });
+      
+      if (!data) return errorResponse("Device not found", 404, origin);
+      return successResponse(data, origin);
     } catch (error) {
-      console.error('Error fetching temperature:', error);
-      return new Response(JSON.stringify({
-        error: 'Failed to fetch temperature',
-        message: error.message
-      }), {
-        status: 500,
-        headers: corsHeaders(origin)
-      });
+      return errorResponse("Failed to fetch device", 500, origin, error.message);
     }
   }
 
-  // Get temperature history for specific device
+  // Endpoint: Get history
   const historyMatch = path.match(/^\/history\/(.+)$/);
   if (historyMatch) {
     const deviceId = historyMatch[1];
-
-    if (!env.SMARTAPP_STORAGE) {
-      return new Response(JSON.stringify({
-        error: 'Storage not configured'
-      }), {
-        status: 500,
-        headers: corsHeaders(origin)
-      });
-    }
+    if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
 
     try {
-      const history = await env.SMARTAPP_STORAGE.get(`history:${deviceId}`, 'json') || [];
-
-      return new Response(JSON.stringify(history), {
-        status: 200,
-        headers: corsHeaders(origin)
-      });
+      const history = await env.SMARTAPP_STORAGE.get(`history:${deviceId}`, "json") || [];
+      return successResponse(history, origin);
     } catch (error) {
-      console.error('Error fetching history:', error);
-      return new Response(JSON.stringify({
-        error: 'Failed to fetch history',
-        message: error.message
-      }), {
-        status: 500,
-        headers: corsHeaders(origin)
-      });
+      return errorResponse("Failed to fetch history", 500, origin, error.message);
     }
   }
 
   return new Response(JSON.stringify({
-    error: 'Not found',
+    error: "Not found",
     endpoints: [
-      'GET /temperatures - Get all current temperatures',
-      'GET /temperature/{deviceId} - Get temperature for specific device',
-      'GET /history/{deviceId} - Get temperature history for specific device',
-      'POST / - SmartThings webhook endpoint'
+      "GET /devices - Get all current device states",
+      "GET /device/{deviceId} - Get state for specific device",
+      "GET /history/{deviceId} - Get event history for specific device"
     ]
-  }), {
-    status: 404,
-    headers: corsHeaders(origin)
-  });
+  }), { status: 404, headers: corsHeaders(origin) });
 }
 
-/**
- * Handle POST requests from SmartThings webhook
- */
-async function handleSmartThingsWebhook(request, env) {
+// --- SmartThings Webhook Handler ---
+
+async function handleSmartThingsWebhook(request, env, ctx) {
   try {
     const body = await request.json();
     const lifecycle = body.lifecycle;
+    console.log(`Processing lifecycle: ${lifecycle}`);
 
-    console.log(`Received ${lifecycle} lifecycle event`);
-
-    // Route to appropriate lifecycle handler
     switch (lifecycle) {
-      case 'PING':
+      case "PING":
         return handlePing(body);
-      case 'CONFIRMATION':
-        return handleConfirmation(body, env);
-      case 'CONFIGURATION':
-        return handleConfiguration(body, env);
-      case 'INSTALL':
-        return handleInstall(body, env);
-      case 'UPDATE':
-        return handleUpdate(body, env);
-      case 'EVENT':
+      case "CONFIRMATION":
+        return handleConfirmation(body);
+      case "CONFIGURATION":
+        return handleConfiguration(body);
+      case "INSTALL":
+        return handleInstall(body, env, ctx);
+      case "UPDATE":
+        return handleUpdate(body, env, ctx);
+      case "EVENT":
         return handleEvent(body, env);
-      case 'UNINSTALL':
+      case "UNINSTALL":
         return handleUninstall(body, env);
       default:
-        console.error(`Unknown lifecycle: ${lifecycle}`);
-        return new Response(JSON.stringify({
-          statusCode: 400,
-          message: `Unknown lifecycle: ${lifecycle}`
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
+        console.warn(`Unknown lifecycle: ${lifecycle}`);
+        return new Response(JSON.stringify({ statusCode: 400, message: "Unknown lifecycle" }), {
+          status: 400, headers: { "Content-Type": "application/json" }
         });
     }
   } catch (error) {
-    console.error('Error handling request:', error);
-    return new Response(JSON.stringify({
-      statusCode: 500,
-      message: error.message
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+    console.error("Webhook Error:", error);
+    return new Response(JSON.stringify({ statusCode: 500, message: error.message }), {
+      status: 500, headers: { "Content-Type": "application/json" }
     });
   }
 }
 
-/**
- * PING - Legacy verification (deprecated but still used)
- * Respond with challenge to verify webhook ownership
- */
+// --- Lifecycle Handlers ---
+
 function handlePing(body) {
-  console.log('Handling PING event');
-
   return new Response(JSON.stringify({
-    pingData: {
-      challenge: body.pingData?.challenge
-    }
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+    pingData: { challenge: body.pingData?.challenge }
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
 }
 
-/**
- * CONFIRMATION - Verify webhook URL ownership
- * This is the modern replacement for PING
- */
-function handleConfirmation(body, env) {
-  console.log('Handling CONFIRMATION event');
-
+function handleConfirmation(body) {
   const confirmationUrl = body.confirmationData?.confirmationUrl;
-
-  if (!confirmationUrl) {
-    return new Response(JSON.stringify({
-      statusCode: 400,
-      message: 'Missing confirmation URL'
-    }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  // In a production app, you would verify the confirmation URL
-  // by making a GET request to it. For now, we'll just acknowledge it.
-  console.log('Confirmation URL:', confirmationUrl);
-
-  return new Response(JSON.stringify({
-    statusCode: 200
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
+  console.log("Confirmation URL verified:", confirmationUrl);
+  return new Response(JSON.stringify({ statusCode: 200 }), { 
+    status: 200, headers: { "Content-Type": "application/json" } 
   });
 }
 
-/**
- * CONFIGURATION - Define the SmartApp configuration UI
- * This tells SmartThings what devices the user can select
- */
-function handleConfiguration(body, env) {
-  console.log('Handling CONFIGURATION event');
-
+function handleConfiguration(body) {
   const phase = body.configurationData?.phase;
-
-  // INITIALIZE phase - Define the configuration page
-  if (phase === 'INITIALIZE') {
+  
+  if (phase === "INITIALIZE") {
     return new Response(JSON.stringify({
       configurationData: {
         initialize: {
-          name: 'HVAC Temperature Monitor',
-          description: 'Monitor HVAC temperature sensors in real-time',
-          id: 'hvac-temp-monitor',
-          permissions: [
-            'r:devices:*'
-          ],
-          firstPageId: 'selectDevices'
+          name: "HVAC Monitor Worker",
+          description: "Cloudflare Worker based Monitor",
+          id: "hvac-monitor-worker",
+          permissions: ["r:devices:*", "r:locations:*"], // Added locations permission for Room Name
+          firstPageId: "selectDevices"
         }
       }
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
 
-  // PAGE phase - Define the device selection page
-  if (phase === 'PAGE') {
-    const pageId = body.configurationData?.pageId;
-
-    if (pageId === 'selectDevices') {
-      return new Response(JSON.stringify({
-        configurationData: {
-          page: {
-            pageId: 'selectDevices',
-            name: 'Select Temperature Sensors',
-            nextPageId: null,
-            previousPageId: null,
-            complete: true,
-            sections: [
-              {
-                name: 'Select your HVAC temperature sensors',
-                settings: [
-                  {
-                    id: 'tempSensors',
-                    name: 'Temperature Sensors',
-                    description: 'Select all temperature sensors to monitor',
-                    type: 'DEVICE',
-                    required: true,
-                    multiple: true,
-                    capabilities: ['temperatureMeasurement'],
-                    permissions: ['r']
-                  }
-                ]
-              }
-            ]
-          }
+  if (phase === "PAGE") {
+    // Split configuration into separate sections to avoid "AND" logic filtering issues
+    return new Response(JSON.stringify({
+      configurationData: {
+        page: {
+          pageId: "selectDevices",
+          name: "Select Devices",
+          complete: true,
+          sections: [
+            {
+              name: "Thermostats",
+              settings: [{
+                id: "selectedThermostats",
+                name: "Select Thermostats",
+                description: "Thermostats to monitor",
+                type: "DEVICE",
+                required: false,
+                multiple: true,
+                capabilities: ["thermostatMode"], // Broad capability for thermostats
+                permissions: ["r"]
+              }]
+            },
+            {
+              name: "Sensors",
+              settings: [{
+                id: "selectedSensors",
+                name: "Select Temperature Sensors",
+                description: "Sensors to monitor",
+                type: "DEVICE",
+                required: false,
+                multiple: true,
+                capabilities: ["temperatureMeasurement"],
+                permissions: ["r"]
+              }]
+            },
+            {
+              name: "Switches",
+              settings: [{
+                id: "selectedSwitches",
+                name: "Select Switches/Plugs",
+                description: "Switches to monitor",
+                type: "DEVICE",
+                required: false,
+                multiple: true,
+                capabilities: ["switch"],
+                permissions: ["r"]
+              }]
+            }
+          ]
         }
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
+      }
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+}
+
+async function handleInstall(body, env, ctx) {
+  return setupSubscriptionsAndFetchInitial(body.installData, env, ctx, "INSTALL");
+}
+
+async function handleUpdate(body, env, ctx) {
+  return setupSubscriptionsAndFetchInitial(body.updateData, env, ctx, "UPDATE");
+}
+
+// Helper for Install/Update to DRY code
+function setupSubscriptionsAndFetchInitial(data, env, ctx, type) {
+  const authToken = data.authToken;
+  const installedAppId = data.installedApp.installedAppId;
+  const config = data.installedApp.config;
+  
+  // Aggregate devices from all possible inputs (new splits + legacy)
+  const rawDevices = [
+    ...(config.selectedThermostats || []),
+    ...(config.selectedSensors || []),
+    ...(config.selectedSwitches || []),
+    ...(config.selectedDevices || []), // Previous single-field attempt
+    ...(config.tempSensors || [])      // Original legacy field
+  ];
+
+  // Deduplicate devices by ID (in case user selects same device in multiple sections)
+  const devices = [];
+  const seenIds = new Set();
+  for (const d of rawDevices) {
+    const id = d.deviceConfig.deviceId;
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      devices.push(d);
+    }
+  }
+
+  // 1. Store App Config
+  if (env.SMARTAPP_STORAGE) {
+    ctx.waitUntil(
+      env.SMARTAPP_STORAGE.put(`install:${installedAppId}`, JSON.stringify({
+        authToken, 
+        config,
+        updatedAt: new Date().toISOString()
+      }))
+    );
+  }
+
+  // 2. Build Subscriptions
+  // We create a subscription for EVERY attribute we want to track for EVERY device
+  const subscriptions = [];
+  
+  for (const device of devices) {
+    for (const track of TRACKED_ATTRIBUTES) {
+      subscriptions.push({
+        sourceType: "DEVICE",
+        device: {
+          deviceId: device.deviceConfig.deviceId,
+          capability: track.capability,
+          attribute: track.attribute,
+          stateChangeOnly: false // Get all events to ensure connectivity
+        }
       });
     }
   }
 
-  // Default response
-  return new Response(JSON.stringify({
-    statusCode: 200
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-/**
- * INSTALL - Set up subscriptions when SmartApp is installed
- * Subscribe to temperature events from selected devices
- */
-async function handleInstall(body, env) {
-  console.log('Handling INSTALL event');
-
-  const installData = body.installData;
-  const authToken = installData?.authToken;
-  const refreshToken = installData?.refreshToken;
-  const installedAppId = installData?.installedApp?.installedAppId;
-  const config = installData?.installedApp?.config;
-
-  // Store installation data in KV storage
-  if (env.SMARTAPP_STORAGE && installedAppId) {
-    await env.SMARTAPP_STORAGE.put(`install:${installedAppId}`, JSON.stringify({
-      authToken,
-      refreshToken,
-      config,
-      installedAt: new Date().toISOString()
-    }));
-    console.log(`Stored installation data for ${installedAppId}`);
+  // 3. IMPORTANT: Fetch current status immediately in background
+  if (authToken && devices.length > 0) {
+    ctx.waitUntil(fetchInitialDeviceStates(devices, authToken, env));
   }
 
-  // Subscribe to temperature events
-  const devices = config?.tempSensors || [];
-  const subscriptions = [];
-
-  for (const device of devices) {
-    subscriptions.push({
-      sourceType: 'DEVICE',
-      device: {
-        deviceId: device.deviceConfig.deviceId,
-        componentId: 'main',
-        capability: 'temperatureMeasurement',
-        attribute: 'temperature',
-        stateChangeOnly: true
-      }
-    });
-  }
-
-  console.log(`Creating ${subscriptions.length} temperature subscriptions`);
+  console.log(`[${type}] Creating ${subscriptions.length} subscriptions for ${devices.length} unique devices.`);
 
   return new Response(JSON.stringify({
-    installData: {
-      subscriptions
-    }
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+    [type === "INSTALL" ? "installData" : "updateData"]: { subscriptions }
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
 }
 
-/**
- * UPDATE - Handle configuration updates
- * Update subscriptions when user changes device selection
- */
-async function handleUpdate(body, env) {
-  console.log('Handling UPDATE event');
-
-  const updateData = body.updateData;
-  const authToken = updateData?.authToken;
-  const refreshToken = updateData?.refreshToken;
-  const installedAppId = updateData?.installedApp?.installedAppId;
-  const config = updateData?.installedApp?.config;
-
-  // Update installation data in KV storage
-  if (env.SMARTAPP_STORAGE && installedAppId) {
-    await env.SMARTAPP_STORAGE.put(`install:${installedAppId}`, JSON.stringify({
-      authToken,
-      refreshToken,
-      config,
-      updatedAt: new Date().toISOString()
-    }));
-    console.log(`Updated installation data for ${installedAppId}`);
-  }
-
-  // Update subscriptions
-  const devices = config?.tempSensors || [];
-  const subscriptions = [];
-
-  for (const device of devices) {
-    subscriptions.push({
-      sourceType: 'DEVICE',
-      device: {
-        deviceId: device.deviceConfig.deviceId,
-        componentId: 'main',
-        capability: 'temperatureMeasurement',
-        attribute: 'temperature',
-        stateChangeOnly: true
-      }
-    });
-  }
-
-  console.log(`Updating to ${subscriptions.length} temperature subscriptions`);
-
-  return new Response(JSON.stringify({
-    updateData: {
-      subscriptions
-    }
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-/**
- * EVENT - Process device events (temperature changes)
- * This is where the real-time temperature updates are received
- */
 async function handleEvent(body, env) {
-  console.log('Handling EVENT');
+  const events = body.eventData?.events || [];
+  console.log(`Received ${events.length} events`);
 
-  const eventData = body.eventData;
-  const installedAppId = eventData?.installedApp?.installedAppId;
-  const events = eventData?.events || [];
-
-  console.log(`Processing ${events.length} events for app ${installedAppId}`);
-
-  // Process each temperature event
   for (const event of events) {
-    if (event.eventType === 'DEVICE_EVENT') {
-      const deviceEvent = event.deviceEvent;
-      const deviceId = deviceEvent?.deviceId;
-      const componentId = deviceEvent?.componentId;
-      const capability = deviceEvent?.capability;
-      const attribute = deviceEvent?.attribute;
-      const value = deviceEvent?.value;
-      const unit = deviceEvent?.unit;
-
-      if (capability === 'temperatureMeasurement' && attribute === 'temperature') {
-        console.log(`Temperature update: Device ${deviceId} = ${value}${unit}`);
-
-        // Store temperature reading in KV storage
-        if (env.SMARTAPP_STORAGE) {
-          const timestamp = new Date().toISOString();
-          const reading = {
-            deviceId,
-            componentId,
-            temperature: value,
-            unit,
-            timestamp
-          };
-
-          // Store latest reading
-          await env.SMARTAPP_STORAGE.put(
-            `temp:${deviceId}`,
-            JSON.stringify(reading)
-          );
-
-          // Also append to history (limited to last 100 readings per device)
-          const historyKey = `history:${deviceId}`;
-          const existingHistory = await env.SMARTAPP_STORAGE.get(historyKey, 'json') || [];
-          existingHistory.unshift(reading);
-
-          // Keep only last 100 readings
-          if (existingHistory.length > 100) {
-            existingHistory.length = 100;
-          }
-
-          await env.SMARTAPP_STORAGE.put(historyKey, JSON.stringify(existingHistory));
-
-          console.log(`Stored temperature reading for device ${deviceId}`);
-        }
-
-        // Optional: Update Google Sheets if configured
-        if (env.GOOGLE_SHEETS_WEBHOOK_URL) {
-          try {
-            await fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                deviceId,
-                temperature: value,
-                unit,
-                timestamp: new Date().toISOString()
-              })
-            });
-            console.log('Updated Google Sheets');
-          } catch (error) {
-            console.error('Failed to update Google Sheets:', error);
-          }
-        }
+    if (event.eventType === "DEVICE_EVENT") {
+      const { deviceId, capability, attribute, value, unit, componentId } = event.deviceEvent;
+      
+      // Check if this is one of the attributes we track
+      const isTracked = TRACKED_ATTRIBUTES.some(t => t.attribute === attribute);
+      
+      if (isTracked) {
+        console.log(`📡 Event: ${attribute} = ${value} (${deviceId})`);
+        await saveEvent(env, deviceId, attribute, value, unit, componentId);
       }
     }
   }
 
-  return new Response(JSON.stringify({
-    statusCode: 200
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
+  return new Response(JSON.stringify({ statusCode: 200 }), { 
+    status: 200, headers: { "Content-Type": "application/json" } 
   });
 }
 
-/**
- * UNINSTALL - Clean up when SmartApp is uninstalled
- */
 async function handleUninstall(body, env) {
-  console.log('Handling UNINSTALL event');
+  const id = body.uninstallData?.installedApp?.installedAppId;
+  if (env.SMARTAPP_STORAGE && id) {
+    await env.SMARTAPP_STORAGE.delete(`install:${id}`);
+  }
+  return new Response(JSON.stringify({ statusCode: 200 }), { 
+    status: 200, headers: { "Content-Type": "application/json" } 
+  });
+}
 
-  const uninstallData = body.uninstallData;
-  const installedAppId = uninstallData?.installedApp?.installedAppId;
+// --- Helpers ---
 
-  // Remove installation data from KV storage
-  if (env.SMARTAPP_STORAGE && installedAppId) {
-    await env.SMARTAPP_STORAGE.delete(`install:${installedAppId}`);
-    console.log(`Removed installation data for ${installedAppId}`);
+// Manually fetch device status via SmartThings API
+async function fetchInitialDeviceStates(devices, authToken, env) {
+  console.log("Fetching full initial states with labels and rooms...");
+  
+  // Cache room names to avoid repeated API calls for same room
+  const roomCache = {};
+
+  for (const device of devices) {
+    const deviceId = device.deviceConfig.deviceId;
+    try {
+      // Step A: Fetch Device Details (Label, RoomID)
+      const detailsResp = await fetch(`https://api.smartthings.com/v1/devices/${deviceId}`, {
+        headers: { "Authorization": `Bearer ${authToken}` }
+      });
+
+      let label = "Unknown Device";
+      let roomId = null;
+      let roomName = "Unassigned";
+
+      if (detailsResp.ok) {
+        const details = await detailsResp.json();
+        label = details.label || details.name || label;
+        roomId = details.roomId;
+        const locationId = details.locationId;
+
+        // Step B: Fetch Room Name (if we have a roomId)
+        if (roomId && locationId) {
+          if (roomCache[roomId]) {
+            roomName = roomCache[roomId];
+          } else {
+            try {
+              const roomResp = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/rooms/${roomId}`, {
+                headers: { "Authorization": `Bearer ${authToken}` }
+              });
+              if (roomResp.ok) {
+                const roomData = await roomResp.json();
+                roomName = roomData.name;
+                roomCache[roomId] = roomName; // Cache it
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch room name for ${roomId}`, err);
+            }
+          }
+        }
+      }
+
+      // Step C: Fetch Device Attributes (Status)
+      const statusResp = await fetch(`https://api.smartthings.com/v1/devices/${deviceId}/status`, {
+        headers: { "Authorization": `Bearer ${authToken}` }
+      });
+      
+      if (statusResp.ok) {
+        const fullStatus = await statusResp.json();
+        const main = fullStatus.components?.main || fullStatus.components?.[Object.keys(fullStatus.components)[0]];
+        
+        // Construct Initial State Object with Label and Room
+        const initialState = {
+          deviceId,
+          label,
+          room: roomName,
+          roomId,
+          lastUpdated: new Date().toISOString()
+        };
+
+        // Extract all tracked attributes
+        for (const track of TRACKED_ATTRIBUTES) {
+          const item = main[track.capability]?.[track.attribute];
+          if (item && item.value !== null) {
+            initialState[track.attribute] = item.value;
+            if (item.unit) initialState[`${track.attribute}Unit`] = item.unit;
+          }
+        }
+        
+        console.log(`Saving initial state for ${label} (${deviceId}) in ${roomName}`);
+        
+        if (env.SMARTAPP_STORAGE) {
+          // Use 'device:' prefix for the full object
+          await env.SMARTAPP_STORAGE.put(`device:${deviceId}`, JSON.stringify(initialState));
+          
+          // Also save to 'temp:' for backward compatibility
+          if (initialState.temperature) {
+            await env.SMARTAPP_STORAGE.put(`temp:${deviceId}`, JSON.stringify({
+              deviceId, 
+              temperature: initialState.temperature, 
+              unit: initialState.temperatureUnit,
+              label: label, // Adding label to legacy storage too just in case
+              room: roomName
+            }));
+          }
+        }
+
+      } else {
+        console.error(`Failed to fetch status for ${deviceId}: ${statusResp.status}`);
+      }
+    } catch (e) {
+      console.error(`Error fetching initial state for ${deviceId}`, e);
+    }
+  }
+}
+
+async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
+  if (!env.SMARTAPP_STORAGE) return;
+
+  const timestamp = new Date().toISOString();
+  
+  // 1. Fetch Existing State (read-modify-write)
+  // We use "device:" prefix now to store the composite object
+  const key = `device:${deviceId}`;
+  // We default to minimal object, but ideally this merges with the rich object created by fetchInitialDeviceStates
+  let currentState = await env.SMARTAPP_STORAGE.get(key, "json") || { deviceId };
+
+  // 2. Update the specific attribute
+  currentState[attribute] = value;
+  if (unit) currentState[`${attribute}Unit`] = unit;
+  currentState.lastUpdated = timestamp;
+
+  // 3. Save merged state
+  await env.SMARTAPP_STORAGE.put(key, JSON.stringify(currentState));
+
+  // 4. Backward Compatibility: If temperature, update the old temp: key as well
+  if (attribute === "temperature") {
+    await env.SMARTAPP_STORAGE.put(`temp:${deviceId}`, JSON.stringify({
+      deviceId, 
+      componentId, 
+      temperature: value, 
+      unit, 
+      timestamp,
+      label: currentState.label, // Preserve label if available
+      room: currentState.room      // Preserve room if available
+    }));
   }
 
-  return new Response(JSON.stringify({
-    statusCode: 200
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  // 5. Save to History (Log the specific change event)
+  const historyKey = `history:${deviceId}`;
+  const historyItem = { 
+    attribute, 
+    value, 
+    unit, 
+    timestamp,
+    // Add snapshot of critical stats to history for context
+    context: {
+      mode: currentState.thermostatMode,
+      setpoint: currentState.coolingSetpoint || currentState.heatingSetpoint
+    }
+  };
+  
+  const existingHistory = await env.SMARTAPP_STORAGE.get(historyKey, "json") || [];
+  existingHistory.unshift(historyItem);
+  if (existingHistory.length > 100) existingHistory.length = 100;
+  
+  await env.SMARTAPP_STORAGE.put(historyKey, JSON.stringify(existingHistory));
+  
+  // 6. Forward to Google Sheets
+  if (env.GOOGLE_SHEETS_WEBHOOK_URL) {
+    fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        deviceId,
+        label: currentState.label,
+        room: currentState.room,
+        attribute,
+        value,
+        unit,
+        timestamp,
+        fullState: currentState 
+      })
+    }).catch(err => console.error("Sheets Error:", err));
+  }
 }
 
-/**
- * CORS headers helper
- */
 function corsHeaders(origin) {
   return {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': origin || '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400'
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400"
   };
 }
 
-/**
- * Handle CORS preflight
- */
 function handleCORS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400'
-    }
+  return new Response(null, { status: 204, headers: corsHeaders("*") });
+}
+
+function successResponse(data, origin) {
+  return new Response(JSON.stringify(data), { status: 200, headers: corsHeaders(origin) });
+}
+
+function errorResponse(message, status, origin, details = null) {
+  return new Response(JSON.stringify({ error: message, details }), { 
+    status: status, headers: corsHeaders(origin) 
   });
 }

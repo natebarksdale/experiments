@@ -7,7 +7,7 @@ compatibility_date = "2024-01-01"
 
 # Account details - add your account_id after creating a Cloudflare account
 # Get this from: https://dash.cloudflare.com/ → Workers & Pages → Overview → Account ID
-# account_id = "249f59593886bddaa03326538661d8f5"
+account_id = "249f59593886bddaa03326538661d8f5"
 
 # KV namespace for storing temperature data and installation details
 # Create this using: wrangler kv:namespace create "SMARTAPP_STORAGE" --config wrangler-smartapp.toml
