@@ -1,4 +1,32 @@
 // smartapp-webhook-worker.js
+//
+// CLOUDFLARE KV OPTIMIZATION STRATEGY
+// ====================================
+// Free tier limit: 1000 KV write operations per day
+//
+// Previous implementation tracked ALL devices (switches + HVAC) resulting in:
+// - ~40 devices * 3 KV writes per event = 120 operations per event cycle
+// - Exceeded daily limit in a few hours
+//
+// Current optimization:
+// - Track ONLY HVAC devices (thermostats + temperature sensors)
+// - Removed switch capability tracking
+// - Disabled history tracking (commented out)
+// - Removed backward compatibility temp: prefix writes
+// - Result: 1 KV write operation per device event
+//
+// With ~8 HVAC devices: 1000 operations / 8 devices = ~125 events per device per day
+// This allows monitoring temperature changes which occur less frequently than switch events
+//
+// Rebalancing system:
+// - Scheduled 2x daily (9am, 6pm ET) via Cloudflare Cron Triggers
+// - Manual trigger via GET /rebalance endpoint
+// - Writes commands to KV queue (1 KV write per rebalancing event)
+// - External script polls KV and executes commands via SmartThings API
+// - Logic prevents units from running inefficiently (COOL when temp < setpoint, etc.)
+// - Hysteresis prevents oscillation near setpoints
+// - Conflict resolution favors cooling when temps significantly above desired
+// - Use Google Sheets webhook for historical logging (already enabled)
 
 export default {
   async fetch(request, env, ctx) {
@@ -17,20 +45,39 @@ export default {
     }
 
     return new Response("Method not allowed", { status: 405 });
+  },
+
+  // Cloudflare Cron Trigger handler for scheduled rebalancing
+  async scheduled(event, env, ctx) {
+    console.log(`⏰ Cron trigger fired at ${new Date(event.scheduledTime).toISOString()}`);
+    try {
+      const result = await performRebalancing(env);
+      console.log("Scheduled rebalancing completed:", result);
+    } catch (error) {
+      console.error("Scheduled rebalancing failed:", error);
+    }
   }
 };
 
 // --- Configuration Constants ---
 
 // Define the capabilities and attributes we want to track
+// ONLY HVAC-related attributes to stay within Cloudflare KV free tier limits
 const TRACKED_ATTRIBUTES = [
   { capability: "temperatureMeasurement", attribute: "temperature" },
   { capability: "thermostatMode", attribute: "thermostatMode" },
   { capability: "thermostatOperatingState", attribute: "thermostatOperatingState" },
   { capability: "thermostatCoolingSetpoint", attribute: "coolingSetpoint" },
-  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" },
-  { capability: "switch", attribute: "switch" }
+  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" }
 ];
+
+// Rebalancing configuration
+const REBALANCE_CONFIG = {
+  DEFAULT_HEAT_SETPOINT: 68,  // °F
+  DEFAULT_COOL_SETPOINT: 72,  // °F
+  HYSTERESIS: 2,              // °F - buffer to prevent oscillation
+  SIGNIFICANT_OVERHEAT: 5     // °F - threshold for favoring cooling in conflicts
+};
 
 // --- GET Request Handlers ---
 
@@ -68,12 +115,9 @@ async function handleGetRequest(path, env) {
     if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
 
     try {
-      // Try new prefix first, fall back to old "temp:" if migration hasn't happened
-      let data = await env.SMARTAPP_STORAGE.get(`device:${deviceId}`, "json");
-      if (!data) {
-        data = await env.SMARTAPP_STORAGE.get(`temp:${deviceId}`, "json");
-      }
-      
+      // Get device data using device: prefix
+      const data = await env.SMARTAPP_STORAGE.get(`device:${deviceId}`, "json");
+
       if (!data) return errorResponse("Device not found", 404, origin);
       return successResponse(data, origin);
     } catch (error) {
@@ -95,12 +139,49 @@ async function handleGetRequest(path, env) {
     }
   }
 
+  // Endpoint: Trigger rebalancing
+  if (path === "/rebalance") {
+    if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
+    try {
+      const result = await performRebalancing(env);
+      return successResponse(result, origin);
+    } catch (error) {
+      console.error("Rebalancing error:", error);
+      return errorResponse("Failed to rebalance", 500, origin, error.message);
+    }
+  }
+
+  // Endpoint: Get rebalancing status
+  if (path === "/rebalance-status") {
+    if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
+    try {
+      const status = await env.SMARTAPP_STORAGE.get("rebalance:status", "json") || { message: "No rebalancing performed yet" };
+      return successResponse(status, origin);
+    } catch (error) {
+      return errorResponse("Failed to get status", 500, origin, error.message);
+    }
+  }
+
+  // Endpoint: Get pending rebalancing commands
+  if (path === "/rebalance-commands") {
+    if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
+    try {
+      const commands = await env.SMARTAPP_STORAGE.get("rebalance:commands", "json") || { commands: [], executed: true };
+      return successResponse(commands, origin);
+    } catch (error) {
+      return errorResponse("Failed to get commands", 500, origin, error.message);
+    }
+  }
+
   return new Response(JSON.stringify({
     error: "Not found",
     endpoints: [
       "GET /devices - Get all current device states",
       "GET /device/{deviceId} - Get state for specific device",
-      "GET /history/{deviceId} - Get event history for specific device"
+      "GET /history/{deviceId} - Get event history for specific device",
+      "GET /rebalance - Trigger HVAC rebalancing",
+      "GET /rebalance-status - Get last rebalancing status",
+      "GET /rebalance-commands - Get pending rebalancing commands"
     ]
   }), { status: 404, headers: corsHeaders(origin) });
 }
@@ -176,12 +257,12 @@ function handleConfiguration(body) {
   }
 
   if (phase === "PAGE") {
-    // Split configuration into separate sections to avoid "AND" logic filtering issues
+    // HVAC-only configuration to minimize Cloudflare KV operations
     return new Response(JSON.stringify({
       configurationData: {
         page: {
           pageId: "selectDevices",
-          name: "Select Devices",
+          name: "Select HVAC Devices",
           complete: true,
           sections: [
             {
@@ -189,11 +270,11 @@ function handleConfiguration(body) {
               settings: [{
                 id: "selectedThermostats",
                 name: "Select Thermostats",
-                description: "Thermostats to monitor",
+                description: "Thermostats to monitor for HVAC control",
                 type: "DEVICE",
                 required: false,
                 multiple: true,
-                capabilities: ["thermostatMode"], // Broad capability for thermostats
+                capabilities: ["thermostatMode"],
                 permissions: ["r"]
               }]
             },
@@ -202,24 +283,11 @@ function handleConfiguration(body) {
               settings: [{
                 id: "selectedSensors",
                 name: "Select Temperature Sensors",
-                description: "Sensors to monitor",
+                description: "Temperature sensors to monitor",
                 type: "DEVICE",
                 required: false,
                 multiple: true,
                 capabilities: ["temperatureMeasurement"],
-                permissions: ["r"]
-              }]
-            },
-            {
-              name: "Switches",
-              settings: [{
-                id: "selectedSwitches",
-                name: "Select Switches/Plugs",
-                description: "Switches to monitor",
-                type: "DEVICE",
-                required: false,
-                multiple: true,
-                capabilities: ["switch"],
                 permissions: ["r"]
               }]
             }
@@ -244,11 +312,10 @@ function setupSubscriptionsAndFetchInitial(data, env, ctx, type) {
   const installedAppId = data.installedApp.installedAppId;
   const config = data.installedApp.config;
   
-  // Aggregate devices from all possible inputs (new splits + legacy)
+  // Aggregate devices from all possible inputs (HVAC only)
   const rawDevices = [
     ...(config.selectedThermostats || []),
     ...(config.selectedSensors || []),
-    ...(config.selectedSwitches || []),
     ...(config.selectedDevices || []), // Previous single-field attempt
     ...(config.tempSensors || [])      // Original legacy field
   ];
@@ -414,21 +481,10 @@ async function fetchInitialDeviceStates(devices, authToken, env) {
         }
         
         console.log(`Saving initial state for ${label} (${deviceId}) in ${roomName}`);
-        
+
         if (env.SMARTAPP_STORAGE) {
           // Use 'device:' prefix for the full object
           await env.SMARTAPP_STORAGE.put(`device:${deviceId}`, JSON.stringify(initialState));
-          
-          // Also save to 'temp:' for backward compatibility
-          if (initialState.temperature) {
-            await env.SMARTAPP_STORAGE.put(`temp:${deviceId}`, JSON.stringify({
-              deviceId, 
-              temperature: initialState.temperature, 
-              unit: initialState.temperatureUnit,
-              label: label, // Adding label to legacy storage too just in case
-              room: roomName
-            }));
-          }
         }
 
       } else {
@@ -459,40 +515,29 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
   // 3. Save merged state
   await env.SMARTAPP_STORAGE.put(key, JSON.stringify(currentState));
 
-  // 4. Backward Compatibility: If temperature, update the old temp: key as well
-  if (attribute === "temperature") {
-    await env.SMARTAPP_STORAGE.put(`temp:${deviceId}`, JSON.stringify({
-      deviceId, 
-      componentId, 
-      temperature: value, 
-      unit, 
-      timestamp,
-      label: currentState.label, // Preserve label if available
-      room: currentState.room      // Preserve room if available
-    }));
-  }
-
-  // 5. Save to History (Log the specific change event)
+  // 4. History tracking DISABLED to save KV operations
+  // To re-enable, uncomment the following section:
+  /*
   const historyKey = `history:${deviceId}`;
-  const historyItem = { 
-    attribute, 
-    value, 
-    unit, 
+  const historyItem = {
+    attribute,
+    value,
+    unit,
     timestamp,
-    // Add snapshot of critical stats to history for context
     context: {
       mode: currentState.thermostatMode,
       setpoint: currentState.coolingSetpoint || currentState.heatingSetpoint
     }
   };
-  
+
   const existingHistory = await env.SMARTAPP_STORAGE.get(historyKey, "json") || [];
   existingHistory.unshift(historyItem);
   if (existingHistory.length > 100) existingHistory.length = 100;
-  
+
   await env.SMARTAPP_STORAGE.put(historyKey, JSON.stringify(existingHistory));
-  
-  // 6. Forward to Google Sheets
+  */
+
+  // 5. Forward to Google Sheets
   if (env.GOOGLE_SHEETS_WEBHOOK_URL) {
     fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
       method: "POST",
@@ -530,7 +575,209 @@ function successResponse(data, origin) {
 }
 
 function errorResponse(message, status, origin, details = null) {
-  return new Response(JSON.stringify({ error: message, details }), { 
-    status: status, headers: corsHeaders(origin) 
+  return new Response(JSON.stringify({ error: message, details }), {
+    status: status, headers: corsHeaders(origin)
   });
+}
+
+// --- Rebalancing Logic ---
+
+/**
+ * Main rebalancing function
+ * Analyzes all HVAC devices and generates commands to optimize operation
+ */
+async function performRebalancing(env) {
+  console.log("🔄 Starting HVAC rebalancing...");
+
+  // 1. Fetch all device states from KV
+  const list = await env.SMARTAPP_STORAGE.list({ prefix: "device:" });
+  const devices = {};
+
+  for (const key of list.keys) {
+    const data = await env.SMARTAPP_STORAGE.get(key.name, "json");
+    if (data && data.temperature !== undefined) {  // Only process devices with temperature
+      const deviceId = key.name.substring(7);
+      devices[deviceId] = data;
+    }
+  }
+
+  if (Object.keys(devices).length === 0) {
+    return {
+      timestamp: new Date().toISOString(),
+      message: "No HVAC devices found",
+      commands: []
+    };
+  }
+
+  // 2. Analyze devices and generate commands
+  const analysis = analyzeHVACSystem(devices);
+  const commands = generateRebalancingCommands(analysis);
+
+  // 3. Store commands and status in KV (single write operation)
+  const result = {
+    timestamp: new Date().toISOString(),
+    analysis: {
+      totalDevices: Object.keys(devices).length,
+      conflicts: analysis.conflicts,
+      inefficiencies: analysis.inefficiencies,
+      summary: analysis.summary
+    },
+    commands: commands,
+    executed: false
+  };
+
+  // Single KV write for commands
+  await env.SMARTAPP_STORAGE.put("rebalance:commands", JSON.stringify(result));
+
+  // Single KV write for status/history
+  await env.SMARTAPP_STORAGE.put("rebalance:status", JSON.stringify({
+    lastRun: result.timestamp,
+    commandCount: commands.length,
+    summary: analysis.summary
+  }));
+
+  console.log(`✅ Rebalancing complete: ${commands.length} commands generated`);
+
+  return result;
+}
+
+/**
+ * Analyze HVAC system for conflicts and inefficiencies
+ */
+function analyzeHVACSystem(devices) {
+  const conflicts = [];
+  const inefficiencies = [];
+  const heatingZones = [];
+  const coolingZones = [];
+
+  // Analyze each device
+  for (const [deviceId, device] of Object.entries(devices)) {
+    const temp = device.temperature;
+    const mode = device.thermostatMode;
+    const coolSetpoint = device.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
+    const heatSetpoint = device.heatingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
+
+    // Track zones by mode
+    if (mode === "heat") {
+      heatingZones.push({ deviceId, device, temp, setpoint: heatSetpoint });
+    } else if (mode === "cool") {
+      coolingZones.push({ deviceId, device, temp, setpoint: coolSetpoint });
+    }
+
+    // Check for inefficiencies
+    if (mode === "cool" && temp < coolSetpoint - REBALANCE_CONFIG.HYSTERESIS) {
+      inefficiencies.push({
+        deviceId,
+        type: "overcooling",
+        message: `${device.label || deviceId} is cooling but temp (${temp}°F) is ${coolSetpoint - temp}°F below setpoint (${coolSetpoint}°F)`,
+        temp,
+        setpoint: coolSetpoint,
+        mode
+      });
+    }
+
+    if (mode === "heat" && temp > heatSetpoint + REBALANCE_CONFIG.HYSTERESIS) {
+      inefficiencies.push({
+        deviceId,
+        type: "overheating",
+        message: `${device.label || deviceId} is heating but temp (${temp}°F) is ${temp - heatSetpoint}°F above setpoint (${heatSetpoint}°F)`,
+        temp,
+        setpoint: heatSetpoint,
+        mode
+      });
+    }
+  }
+
+  // Check for heating vs cooling conflicts
+  if (heatingZones.length > 0 && coolingZones.length > 0) {
+    conflicts.push({
+      type: "heating-cooling-conflict",
+      message: `System has ${heatingZones.length} zones in HEAT mode and ${coolingZones.length} zones in COOL mode`,
+      heating: heatingZones.map(z => ({
+        deviceId: z.deviceId,
+        label: z.device.label,
+        temp: z.temp,
+        setpoint: z.setpoint
+      })),
+      cooling: coolingZones.map(z => ({
+        deviceId: z.deviceId,
+        label: z.device.label,
+        temp: z.temp,
+        setpoint: z.setpoint
+      }))
+    });
+  }
+
+  const summary = `Found ${conflicts.length} conflicts and ${inefficiencies.length} inefficiencies`;
+
+  return { conflicts, inefficiencies, heatingZones, coolingZones, summary };
+}
+
+/**
+ * Generate rebalancing commands based on analysis
+ */
+function generateRebalancingCommands(analysis) {
+  const commands = [];
+
+  // 1. Handle inefficiencies - turn off units that are running when they shouldn't
+  for (const issue of analysis.inefficiencies) {
+    if (issue.type === "overcooling" || issue.type === "overheating") {
+      commands.push({
+        deviceId: issue.deviceId,
+        action: "setThermostatMode",
+        value: "off",
+        reason: issue.message
+      });
+    }
+  }
+
+  // 2. Handle conflicts - favor cooling if any zone is significantly overheated
+  if (analysis.conflicts.length > 0) {
+    for (const conflict of analysis.conflicts) {
+      if (conflict.type === "heating-cooling-conflict") {
+        // Check if any cooling zone is significantly overheated
+        const significantOverheat = conflict.cooling.some(z =>
+          z.temp > z.setpoint + REBALANCE_CONFIG.SIGNIFICANT_OVERHEAT
+        );
+
+        if (significantOverheat) {
+          // Turn off all heating zones
+          for (const zone of conflict.heating) {
+            commands.push({
+              deviceId: zone.deviceId,
+              action: "setThermostatMode",
+              value: "off",
+              reason: `Turning off heating in ${zone.label} to prioritize cooling (conflict resolution)`
+            });
+          }
+        } else {
+          // Check if heating zones are already satisfied
+          for (const zone of conflict.heating) {
+            if (zone.temp >= zone.setpoint + REBALANCE_CONFIG.HYSTERESIS) {
+              commands.push({
+                deviceId: zone.deviceId,
+                action: "setThermostatMode",
+                value: "off",
+                reason: `${zone.label} has reached target temperature`
+              });
+            }
+          }
+
+          // Check if cooling zones are already satisfied
+          for (const zone of conflict.cooling) {
+            if (zone.temp <= zone.setpoint - REBALANCE_CONFIG.HYSTERESIS) {
+              commands.push({
+                deviceId: zone.deviceId,
+                action: "setThermostatMode",
+                value: "off",
+                reason: `${zone.label} has reached target temperature`
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return commands;
 }

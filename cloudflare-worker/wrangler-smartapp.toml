@@ -17,8 +17,21 @@ binding = "SMARTAPP_STORAGE"
 id = "6bdb56f9413f49b3a30f84b0b282c115"
 
 # Workers are free up to 100,000 requests per day
+# KV is free up to 1,000 write operations per day (free tier)
 # KV is free up to 100,000 read operations per day
 # https://developers.cloudflare.com/workers/platform/pricing/
+
+# Scheduled Cron Triggers for HVAC Rebalancing
+# Runs at 9:00 AM and 6:00 PM Eastern Time (ET)
+# Note: Cron runs in UTC, so times are adjusted for Eastern Time
+# - 9:00 AM ET = 2:00 PM UTC (during EST) or 1:00 PM UTC (during EDT)
+# - 6:00 PM ET = 11:00 PM UTC (during EST) or 10:00 PM UTC (during EDT)
+# Using conservative UTC times to ensure coverage across DST transitions
+[triggers]
+crons = [
+  "0 14 * * *",  # 9:00 AM ET (standard time)
+  "0 23 * * *"   # 6:00 PM ET (standard time)
+]
 
 # Optional: Google Sheets webhook URL for syncing temperature data
 # Set this using wrangler:
