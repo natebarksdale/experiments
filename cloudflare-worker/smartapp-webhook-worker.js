@@ -1,4 +1,27 @@
 // smartapp-webhook-worker.js
+//
+// CLOUDFLARE KV OPTIMIZATION STRATEGY
+// ====================================
+// Free tier limit: 1000 KV write operations per day
+//
+// Previous implementation tracked ALL devices (switches + HVAC) resulting in:
+// - ~40 devices * 3 KV writes per event = 120 operations per event cycle
+// - Exceeded daily limit in a few hours
+//
+// Current optimization:
+// - Track ONLY HVAC devices (thermostats + temperature sensors)
+// - Removed switch capability tracking
+// - Disabled history tracking (commented out)
+// - Removed backward compatibility temp: prefix writes
+// - Result: 1 KV write operation per device event
+//
+// With ~8 HVAC devices: 1000 operations / 8 devices = ~125 events per device per day
+// This allows monitoring temperature changes which occur less frequently than switch events
+//
+// Future enhancements for conflict detection:
+// - Monitor intra-loop conflicts when multiple zones compete
+// - Trigger rebalancing via SmartThings API (doesn't use KV writes)
+// - Use Google Sheets webhook for historical logging (already enabled)
 
 export default {
   async fetch(request, env, ctx) {
@@ -23,13 +46,13 @@ export default {
 // --- Configuration Constants ---
 
 // Define the capabilities and attributes we want to track
+// ONLY HVAC-related attributes to stay within Cloudflare KV free tier limits
 const TRACKED_ATTRIBUTES = [
   { capability: "temperatureMeasurement", attribute: "temperature" },
   { capability: "thermostatMode", attribute: "thermostatMode" },
   { capability: "thermostatOperatingState", attribute: "thermostatOperatingState" },
   { capability: "thermostatCoolingSetpoint", attribute: "coolingSetpoint" },
-  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" },
-  { capability: "switch", attribute: "switch" }
+  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" }
 ];
 
 // --- GET Request Handlers ---
@@ -68,12 +91,9 @@ async function handleGetRequest(path, env) {
     if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
 
     try {
-      // Try new prefix first, fall back to old "temp:" if migration hasn't happened
-      let data = await env.SMARTAPP_STORAGE.get(`device:${deviceId}`, "json");
-      if (!data) {
-        data = await env.SMARTAPP_STORAGE.get(`temp:${deviceId}`, "json");
-      }
-      
+      // Get device data using device: prefix
+      const data = await env.SMARTAPP_STORAGE.get(`device:${deviceId}`, "json");
+
       if (!data) return errorResponse("Device not found", 404, origin);
       return successResponse(data, origin);
     } catch (error) {
@@ -176,12 +196,12 @@ function handleConfiguration(body) {
   }
 
   if (phase === "PAGE") {
-    // Split configuration into separate sections to avoid "AND" logic filtering issues
+    // HVAC-only configuration to minimize Cloudflare KV operations
     return new Response(JSON.stringify({
       configurationData: {
         page: {
           pageId: "selectDevices",
-          name: "Select Devices",
+          name: "Select HVAC Devices",
           complete: true,
           sections: [
             {
@@ -189,11 +209,11 @@ function handleConfiguration(body) {
               settings: [{
                 id: "selectedThermostats",
                 name: "Select Thermostats",
-                description: "Thermostats to monitor",
+                description: "Thermostats to monitor for HVAC control",
                 type: "DEVICE",
                 required: false,
                 multiple: true,
-                capabilities: ["thermostatMode"], // Broad capability for thermostats
+                capabilities: ["thermostatMode"],
                 permissions: ["r"]
               }]
             },
@@ -202,24 +222,11 @@ function handleConfiguration(body) {
               settings: [{
                 id: "selectedSensors",
                 name: "Select Temperature Sensors",
-                description: "Sensors to monitor",
+                description: "Temperature sensors to monitor",
                 type: "DEVICE",
                 required: false,
                 multiple: true,
                 capabilities: ["temperatureMeasurement"],
-                permissions: ["r"]
-              }]
-            },
-            {
-              name: "Switches",
-              settings: [{
-                id: "selectedSwitches",
-                name: "Select Switches/Plugs",
-                description: "Switches to monitor",
-                type: "DEVICE",
-                required: false,
-                multiple: true,
-                capabilities: ["switch"],
                 permissions: ["r"]
               }]
             }
@@ -244,11 +251,10 @@ function setupSubscriptionsAndFetchInitial(data, env, ctx, type) {
   const installedAppId = data.installedApp.installedAppId;
   const config = data.installedApp.config;
   
-  // Aggregate devices from all possible inputs (new splits + legacy)
+  // Aggregate devices from all possible inputs (HVAC only)
   const rawDevices = [
     ...(config.selectedThermostats || []),
     ...(config.selectedSensors || []),
-    ...(config.selectedSwitches || []),
     ...(config.selectedDevices || []), // Previous single-field attempt
     ...(config.tempSensors || [])      // Original legacy field
   ];
@@ -414,21 +420,10 @@ async function fetchInitialDeviceStates(devices, authToken, env) {
         }
         
         console.log(`Saving initial state for ${label} (${deviceId}) in ${roomName}`);
-        
+
         if (env.SMARTAPP_STORAGE) {
           // Use 'device:' prefix for the full object
           await env.SMARTAPP_STORAGE.put(`device:${deviceId}`, JSON.stringify(initialState));
-          
-          // Also save to 'temp:' for backward compatibility
-          if (initialState.temperature) {
-            await env.SMARTAPP_STORAGE.put(`temp:${deviceId}`, JSON.stringify({
-              deviceId, 
-              temperature: initialState.temperature, 
-              unit: initialState.temperatureUnit,
-              label: label, // Adding label to legacy storage too just in case
-              room: roomName
-            }));
-          }
         }
 
       } else {
@@ -459,40 +454,29 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
   // 3. Save merged state
   await env.SMARTAPP_STORAGE.put(key, JSON.stringify(currentState));
 
-  // 4. Backward Compatibility: If temperature, update the old temp: key as well
-  if (attribute === "temperature") {
-    await env.SMARTAPP_STORAGE.put(`temp:${deviceId}`, JSON.stringify({
-      deviceId, 
-      componentId, 
-      temperature: value, 
-      unit, 
-      timestamp,
-      label: currentState.label, // Preserve label if available
-      room: currentState.room      // Preserve room if available
-    }));
-  }
-
-  // 5. Save to History (Log the specific change event)
+  // 4. History tracking DISABLED to save KV operations
+  // To re-enable, uncomment the following section:
+  /*
   const historyKey = `history:${deviceId}`;
-  const historyItem = { 
-    attribute, 
-    value, 
-    unit, 
+  const historyItem = {
+    attribute,
+    value,
+    unit,
     timestamp,
-    // Add snapshot of critical stats to history for context
     context: {
       mode: currentState.thermostatMode,
       setpoint: currentState.coolingSetpoint || currentState.heatingSetpoint
     }
   };
-  
+
   const existingHistory = await env.SMARTAPP_STORAGE.get(historyKey, "json") || [];
   existingHistory.unshift(historyItem);
   if (existingHistory.length > 100) existingHistory.length = 100;
-  
+
   await env.SMARTAPP_STORAGE.put(historyKey, JSON.stringify(existingHistory));
-  
-  // 6. Forward to Google Sheets
+  */
+
+  // 5. Forward to Google Sheets
   if (env.GOOGLE_SHEETS_WEBHOOK_URL) {
     fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
       method: "POST",
