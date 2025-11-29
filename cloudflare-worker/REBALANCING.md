@@ -78,36 +78,34 @@ crons = [
 
 ## Command Execution
 
-The worker analyzes device states and writes commands to KV. A separate script executes them.
+**The worker now executes commands automatically!** When rebalancing runs (via cron or manual trigger), it:
+1. Analyzes device states
+2. Generates commands
+3. **Executes commands immediately** using the SmartApp's OAuth token
+4. Stores results in KV
 
-### Setup Command Executor
+No external scripts required! The SmartApp's long-lived OAuth token is used for authentication.
 
-1. **Create SmartThings Personal Access Token**:
-   - Visit: https://account.smartthings.com/tokens
-   - Required scopes: `r:devices:*`, `x:devices:*`
+### Optional: External Script Backup
 
-2. **Set Environment Variables**:
+For manual execution or as a backup, you can still use `execute-rebalance-commands.js`:
+
+1. **Set Environment Variables**:
    ```bash
-   export SMARTTHINGS_PAT="your-personal-access-token"
    export WORKER_URL="https://your-worker.workers.dev"
    ```
 
-3. **Run Manually**:
+2. **Run Manually**:
    ```bash
    node execute-rebalance-commands.js
    ```
 
-4. **Schedule with Cron** (runs every 15 minutes):
-   ```bash
-   crontab -e
-   # Add:
-   */15 * * * * /usr/bin/node /path/to/execute-rebalance-commands.js >> /var/log/hvac-rebalance.log 2>&1
-   ```
+   Note: This script polls `/rebalance-commands` but will skip if commands are already executed.
 
 ## API Endpoints
 
 ### GET /rebalance
-Trigger rebalancing analysis and generate commands.
+Trigger rebalancing analysis, generate commands, and execute them.
 
 **Response**:
 ```json
@@ -127,9 +125,17 @@ Trigger rebalancing analysis and generate commands.
       "reason": "Unit is cooling but temp is 3°F below setpoint"
     }
   ],
-  "executed": false
+  "executed": true,
+  "executionResults": [
+    {
+      "success": true,
+      "deviceId": "xxx"
+    }
+  ]
 }
 ```
+
+**Note**: `executed: true` means commands were sent to devices. If `false`, the SmartApp may not be installed.
 
 ### GET /rebalance-status
 Check last rebalancing run.
@@ -139,6 +145,7 @@ Check last rebalancing run.
 {
   "lastRun": "2025-11-26T14:00:00.000Z",
   "commandCount": 3,
+  "executed": true,
   "summary": "Found 1 conflicts and 2 inefficiencies"
 }
 ```
@@ -180,9 +187,15 @@ wrangler tail --config wrangler-smartapp.toml
 
 ## Troubleshooting
 
-**Problem**: Commands not executing
-- **Solution**: Verify `execute-rebalance-commands.js` is running via cron
-- Check: `SMARTTHINGS_PAT` and `WORKER_URL` environment variables
+**Problem**: Commands showing `executed: false`
+- **Solution**: Verify SmartApp is installed in SmartThings
+- Check worker logs for authToken errors
+- Verify KV contains `install:*` key with valid authToken
+
+**Problem**: Commands executing but devices not responding
+- **Solution**: Check SmartThings app to verify devices are online
+- Review `executionResults` in response for specific device errors
+- Verify devices support the thermostatMode capability
 
 **Problem**: Exceeding KV write limits
 - **Solution**: Reduce tracked devices to HVAC only (already done)
@@ -194,8 +207,9 @@ wrangler tail --config wrangler-smartapp.toml
 
 ## Future Enhancements
 
-- [ ] Add POST endpoint to mark commands as executed
-- [ ] Implement command retry logic
-- [ ] Add notifications when conflicts are detected
+- [x] ~~Add command execution to worker~~ (Completed!)
+- [ ] Implement command retry logic for failed executions
+- [ ] Add notifications when conflicts are detected (email/SMS/push)
 - [ ] Support multiple HVAC loops with independent control
 - [ ] Add web dashboard for monitoring and manual control
+- [ ] Add intelligent learning to optimize setpoint recommendations

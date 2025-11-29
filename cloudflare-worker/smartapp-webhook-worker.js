@@ -583,6 +583,68 @@ function errorResponse(message, status, origin, details = null) {
 // --- Rebalancing Logic ---
 
 /**
+ * Execute a single device command via SmartThings API
+ */
+async function executeDeviceCommand(deviceId, action, value, pat) {
+  const command = buildSmartThingsCommand(action, value);
+
+  try {
+    const response = await fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pat}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ commands: [command] })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    return { success: true, deviceId };
+  } catch (error) {
+    console.error(`Failed to execute command on ${deviceId}:`, error);
+    return { success: false, deviceId, error: error.message };
+  }
+}
+
+/**
+ * Build SmartThings command object based on action type
+ */
+function buildSmartThingsCommand(action, value) {
+  switch (action) {
+    case 'setThermostatMode':
+      return {
+        component: 'main',
+        capability: 'thermostatMode',
+        command: 'setThermostatMode',
+        arguments: [value]
+      };
+
+    case 'setCoolingSetpoint':
+      return {
+        component: 'main',
+        capability: 'thermostatCoolingSetpoint',
+        command: 'setCoolingSetpoint',
+        arguments: [value]
+      };
+
+    case 'setHeatingSetpoint':
+      return {
+        component: 'main',
+        capability: 'thermostatHeatingSetpoint',
+        command: 'setHeatingSetpoint',
+        arguments: [value]
+      };
+
+    default:
+      throw new Error(`Unknown action: ${action}`);
+  }
+}
+
+/**
  * Main rebalancing function
  * Analyzes all HVAC devices and generates commands to optimize operation
  */
@@ -613,7 +675,41 @@ async function performRebalancing(env) {
   const analysis = analyzeHVACSystem(devices);
   const commands = generateRebalancingCommands(analysis);
 
-  // 3. Store commands and status in KV (single write operation)
+  // 3. Get SmartApp authToken from KV storage
+  let authToken = null;
+  const installList = await env.SMARTAPP_STORAGE.list({ prefix: "install:" });
+  if (installList.keys.length > 0) {
+    // Get the first (and typically only) installation
+    const installData = await env.SMARTAPP_STORAGE.get(installList.keys[0].name, "json");
+    authToken = installData?.authToken;
+  }
+
+  // 4. Execute commands if authToken is available
+  let executed = false;
+  let executionResults = [];
+
+  if (authToken && commands.length > 0) {
+    console.log(`📤 Executing ${commands.length} commands via SmartThings API...`);
+
+    for (const cmd of commands) {
+      const result = await executeDeviceCommand(cmd.deviceId, cmd.action, cmd.value, authToken);
+      executionResults.push(result);
+
+      if (result.success) {
+        console.log(`  ✓ ${cmd.action} on ${cmd.deviceId}`);
+      } else {
+        console.error(`  ✗ Failed ${cmd.action} on ${cmd.deviceId}: ${result.error}`);
+      }
+    }
+
+    executed = true;
+    const successCount = executionResults.filter(r => r.success).length;
+    console.log(`✅ Execution complete: ${successCount}/${commands.length} successful`);
+  } else if (commands.length > 0) {
+    console.log(`⚠️  SmartApp not installed or authToken unavailable - commands generated but not executed`);
+  }
+
+  // 4. Store commands and status in KV (single write operation)
   const result = {
     timestamp: new Date().toISOString(),
     analysis: {
@@ -623,7 +719,8 @@ async function performRebalancing(env) {
       summary: analysis.summary
     },
     commands: commands,
-    executed: false
+    executed: executed,
+    executionResults: executionResults.length > 0 ? executionResults : undefined
   };
 
   // Single KV write for commands
@@ -633,6 +730,7 @@ async function performRebalancing(env) {
   await env.SMARTAPP_STORAGE.put("rebalance:status", JSON.stringify({
     lastRun: result.timestamp,
     commandCount: commands.length,
+    executed: executed,
     summary: analysis.summary
   }));
 
