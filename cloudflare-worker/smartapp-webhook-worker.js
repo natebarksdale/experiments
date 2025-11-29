@@ -816,6 +816,7 @@ function analyzeHVACSystem(devices) {
  */
 function generateRebalancingCommands(analysis) {
   const commands = [];
+  const processedDevices = new Set(); // Track devices to avoid duplicates
 
   // 1. Handle inefficiencies - turn off units that are running when they shouldn't
   for (const issue of analysis.inefficiencies) {
@@ -826,6 +827,7 @@ function generateRebalancingCommands(analysis) {
         value: "off",
         reason: issue.message
       });
+      processedDevices.add(issue.deviceId); // Mark as processed
     }
   }
 
@@ -841,35 +843,40 @@ function generateRebalancingCommands(analysis) {
         if (significantOverheat) {
           // Turn off all heating zones
           for (const zone of conflict.heating) {
-            commands.push({
-              deviceId: zone.deviceId,
-              action: "setThermostatMode",
-              value: "off",
-              reason: `Turning off heating in ${zone.label} to prioritize cooling (conflict resolution)`
-            });
+            if (!processedDevices.has(zone.deviceId)) { // Skip if already processed
+              commands.push({
+                deviceId: zone.deviceId,
+                action: "setThermostatMode",
+                value: "off",
+                reason: `Turning off heating in ${zone.label} to prioritize cooling (conflict resolution)`
+              });
+              processedDevices.add(zone.deviceId);
+            }
           }
         } else {
           // Check if heating zones are already satisfied
           for (const zone of conflict.heating) {
-            if (zone.temp >= zone.setpoint + REBALANCE_CONFIG.HYSTERESIS) {
+            if (zone.temp >= zone.setpoint + REBALANCE_CONFIG.HYSTERESIS && !processedDevices.has(zone.deviceId)) {
               commands.push({
                 deviceId: zone.deviceId,
                 action: "setThermostatMode",
                 value: "off",
                 reason: `${zone.label} has reached target temperature`
               });
+              processedDevices.add(zone.deviceId);
             }
           }
 
           // Check if cooling zones are already satisfied
           for (const zone of conflict.cooling) {
-            if (zone.temp <= zone.setpoint - REBALANCE_CONFIG.HYSTERESIS) {
+            if (zone.temp <= zone.setpoint - REBALANCE_CONFIG.HYSTERESIS && !processedDevices.has(zone.deviceId)) {
               commands.push({
                 deviceId: zone.deviceId,
                 action: "setThermostatMode",
                 value: "off",
                 reason: `${zone.label} has reached target temperature`
               });
+              processedDevices.add(zone.deviceId);
             }
           }
         }
