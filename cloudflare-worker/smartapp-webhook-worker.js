@@ -807,13 +807,15 @@ function analyzeHVACSystem(devices) {
         deviceId: z.deviceId,
         label: z.device.label,
         temp: z.temp,
-        setpoint: z.setpoint
+        setpoint: z.setpoint,
+        operatingState: z.operatingState
       })),
       cooling: coolingZones.map(z => ({
         deviceId: z.deviceId,
         label: z.device.label,
         temp: z.temp,
-        setpoint: z.setpoint
+        setpoint: z.setpoint,
+        operatingState: z.operatingState
       }))
     });
   }
