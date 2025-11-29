@@ -866,27 +866,31 @@ function generateRebalancingCommands(analysis) {
             }
           }
         } else {
-          // Check if heating zones are already satisfied
+          // Check if heating zones are already satisfied AND actively running
           for (const zone of conflict.heating) {
-            if (zone.temp >= zone.setpoint + REBALANCE_CONFIG.HYSTERESIS && !processedDevices.has(zone.deviceId)) {
+            if (zone.temp >= zone.setpoint + REBALANCE_CONFIG.HYSTERESIS
+                && zone.operatingState === "heating"
+                && !processedDevices.has(zone.deviceId)) {
               commands.push({
                 deviceId: zone.deviceId,
                 action: "setThermostatMode",
                 value: "off",
-                reason: `${zone.label} has reached target temperature`
+                reason: `${zone.label} is heating but has reached target temperature`
               });
               processedDevices.add(zone.deviceId);
             }
           }
 
-          // Check if cooling zones are already satisfied
+          // Check if cooling zones are already satisfied AND actively running
           for (const zone of conflict.cooling) {
-            if (zone.temp <= zone.setpoint - REBALANCE_CONFIG.HYSTERESIS && !processedDevices.has(zone.deviceId)) {
+            if (zone.temp <= zone.setpoint - REBALANCE_CONFIG.HYSTERESIS
+                && zone.operatingState === "cooling"
+                && !processedDevices.has(zone.deviceId)) {
               commands.push({
                 deviceId: zone.deviceId,
                 action: "setThermostatMode",
                 value: "off",
-                reason: `${zone.label} has reached target temperature`
+                reason: `${zone.label} is cooling but has reached target temperature`
               });
               processedDevices.add(zone.deviceId);
             }
