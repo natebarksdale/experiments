@@ -249,7 +249,7 @@ function handleConfiguration(body) {
           name: "HVAC Monitor Worker",
           description: "Cloudflare Worker based Monitor",
           id: "hvac-monitor-worker",
-          permissions: ["r:devices:*", "r:locations:*"], // Added locations permission for Room Name
+          permissions: ["r:devices:*", "x:devices:*", "r:locations:*"], // Read devices, execute commands, read locations
           firstPageId: "selectDevices"
         }
       }
@@ -275,7 +275,7 @@ function handleConfiguration(body) {
                 required: false,
                 multiple: true,
                 capabilities: ["thermostatMode"],
-                permissions: ["r"]
+                permissions: ["r", "x"]
               }]
             },
             {
