@@ -587,6 +587,12 @@ function errorResponse(message, status, origin, details = null) {
  */
 async function executeDeviceCommand(deviceId, action, value, pat) {
   const command = buildSmartThingsCommand(action, value);
+  const payload = { commands: [command] };
+
+  // Log the exact command being sent
+  console.log(`📤 Sending command to ${deviceId}:`);
+  console.log(`   Action: ${action}, Value: ${value}`);
+  console.log(`   Payload: ${JSON.stringify(payload, null, 2)}`);
 
   try {
     const response = await fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
@@ -595,17 +601,20 @@ async function executeDeviceCommand(deviceId, action, value, pat) {
         'Authorization': `Bearer ${pat}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ commands: [command] })
+      body: JSON.stringify(payload)
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      console.error(`   Response (${response.status}): ${responseText.substring(0, 200)}`);
+      throw new Error(`HTTP ${response.status}: ${responseText}`);
     }
 
-    return { success: true, deviceId };
+    console.log(`   ✓ Success (${response.status}): ${responseText.substring(0, 100)}`);
+    return { success: true, deviceId, response: responseText };
   } catch (error) {
-    console.error(`Failed to execute command on ${deviceId}:`, error);
+    console.error(`   ✗ Failed: ${error.message}`);
     return { success: false, deviceId, error: error.message };
   }
 }
@@ -752,36 +761,39 @@ function analyzeHVACSystem(devices) {
   for (const [deviceId, device] of Object.entries(devices)) {
     const temp = device.temperature;
     const mode = device.thermostatMode;
+    const operatingState = device.thermostatOperatingState || "idle";
     const coolSetpoint = device.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
     const heatSetpoint = device.heatingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
 
     // Track zones by mode
     if (mode === "heat") {
-      heatingZones.push({ deviceId, device, temp, setpoint: heatSetpoint });
+      heatingZones.push({ deviceId, device, temp, setpoint: heatSetpoint, operatingState });
     } else if (mode === "cool") {
-      coolingZones.push({ deviceId, device, temp, setpoint: coolSetpoint });
+      coolingZones.push({ deviceId, device, temp, setpoint: coolSetpoint, operatingState });
     }
 
-    // Check for inefficiencies
-    if (mode === "cool" && temp < coolSetpoint - REBALANCE_CONFIG.HYSTERESIS) {
+    // Check for inefficiencies - ONLY if unit is actively running
+    if (mode === "cool" && operatingState === "cooling" && temp < coolSetpoint - REBALANCE_CONFIG.HYSTERESIS) {
       inefficiencies.push({
         deviceId,
         type: "overcooling",
-        message: `${device.label || deviceId} is cooling but temp (${temp}°F) is ${coolSetpoint - temp}°F below setpoint (${coolSetpoint}°F)`,
+        message: `${device.label || deviceId} is actively cooling but temp (${temp}°F) is ${coolSetpoint - temp}°F below setpoint (${coolSetpoint}°F)`,
         temp,
         setpoint: coolSetpoint,
-        mode
+        mode,
+        operatingState
       });
     }
 
-    if (mode === "heat" && temp > heatSetpoint + REBALANCE_CONFIG.HYSTERESIS) {
+    if (mode === "heat" && operatingState === "heating" && temp > heatSetpoint + REBALANCE_CONFIG.HYSTERESIS) {
       inefficiencies.push({
         deviceId,
         type: "overheating",
-        message: `${device.label || deviceId} is heating but temp (${temp}°F) is ${temp - heatSetpoint}°F above setpoint (${heatSetpoint}°F)`,
+        message: `${device.label || deviceId} is actively heating but temp (${temp}°F) is ${temp - heatSetpoint}°F above setpoint (${heatSetpoint}°F)`,
         temp,
         setpoint: heatSetpoint,
-        mode
+        mode,
+        operatingState
       });
     }
   }
