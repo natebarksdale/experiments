@@ -761,9 +761,21 @@ function analyzeHVACSystem(devices) {
   for (const [deviceId, device] of Object.entries(devices)) {
     const temp = device.temperature;
     const mode = device.thermostatMode;
-    const operatingState = device.thermostatOperatingState || "idle";
     const coolSetpoint = device.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
     const heatSetpoint = device.heatingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
+
+    // Get operating state - infer if not provided by device (common with IR bridges like Cielo)
+    let operatingState = device.thermostatOperatingState;
+    if (!operatingState) {
+      // Infer operating state from mode and temperature
+      if (mode === "heat" && temp < heatSetpoint - 1) {
+        operatingState = "heating"; // Likely actively heating to reach setpoint
+      } else if (mode === "cool" && temp > coolSetpoint + 1) {
+        operatingState = "cooling"; // Likely actively cooling to reach setpoint
+      } else {
+        operatingState = "idle"; // Target reached or unit off
+      }
+    }
 
     // Track zones by mode
     if (mode === "heat") {
