@@ -68,7 +68,8 @@ const TRACKED_ATTRIBUTES = [
   { capability: "thermostatMode", attribute: "thermostatMode" },
   { capability: "thermostatOperatingState", attribute: "thermostatOperatingState" },
   { capability: "thermostatCoolingSetpoint", attribute: "coolingSetpoint" },
-  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" }
+  { capability: "thermostatHeatingSetpoint", attribute: "heatingSetpoint" },
+  { capability: "switch", attribute: "switch" }  // For thermostats that expose on/off state
 ];
 
 // Rebalancing configuration
@@ -761,9 +762,36 @@ function analyzeHVACSystem(devices) {
   for (const [deviceId, device] of Object.entries(devices)) {
     const temp = device.temperature;
     const mode = device.thermostatMode;
-    const operatingState = device.thermostatOperatingState || "idle";
     const coolSetpoint = device.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
     const heatSetpoint = device.heatingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
+
+    // Get operating state - use multiple sources in order of preference
+    let operatingState = device.thermostatOperatingState;
+
+    if (!operatingState) {
+      // Try switch state if available (for thermostats that expose switch capability)
+      if (device.switch === "on") {
+        // Unit is on, infer what it's doing based on mode
+        if (mode === "heat") {
+          operatingState = "heating";
+        } else if (mode === "cool") {
+          operatingState = "cooling";
+        } else {
+          operatingState = "idle"; // Fan only or other mode
+        }
+      } else if (device.switch === "off") {
+        operatingState = "idle"; // Unit is off
+      } else {
+        // No switch state, infer from mode and temperature
+        if (mode === "heat" && temp < heatSetpoint - 1) {
+          operatingState = "heating"; // Likely actively heating to reach setpoint
+        } else if (mode === "cool" && temp > coolSetpoint + 1) {
+          operatingState = "cooling"; // Likely actively cooling to reach setpoint
+        } else {
+          operatingState = "idle"; // Target reached or unit off
+        }
+      }
+    }
 
     // Track zones by mode
     if (mode === "heat") {
