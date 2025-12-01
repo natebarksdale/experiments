@@ -93,12 +93,13 @@ async function handleGetRequest(path, env) {
     try {
       const list = await env.SMARTAPP_STORAGE.list({ prefix: "device:" });
       const devices = {};
-      
+
       for (const key of list.keys) {
         const data = await env.SMARTAPP_STORAGE.get(key.name, "json");
-        if (data) {
+        // Only include HVAC devices (has temperature or thermostat attributes)
+        if (data && (data.temperature !== undefined || data.thermostatMode !== undefined)) {
           // Key format is "device:deviceId"
-          const deviceId = key.name.substring(7); 
+          const deviceId = key.name.substring(7);
           devices[deviceId] = data;
         }
       }
@@ -174,15 +175,47 @@ async function handleGetRequest(path, env) {
     }
   }
 
+  // Endpoint: Cleanup non-HVAC devices from KV storage
+  if (path === "/cleanup") {
+    if (!env.SMARTAPP_STORAGE) return errorResponse("Storage not configured", 500, origin);
+    try {
+      const list = await env.SMARTAPP_STORAGE.list({ prefix: "device:" });
+      let deletedCount = 0;
+      let keptCount = 0;
+
+      for (const key of list.keys) {
+        const data = await env.SMARTAPP_STORAGE.get(key.name, "json");
+        // Delete devices that don't have temperature or thermostat attributes
+        if (data && !data.temperature && !data.thermostatMode) {
+          await env.SMARTAPP_STORAGE.delete(key.name);
+          deletedCount++;
+          console.log(`🗑️  Deleted non-HVAC device: ${key.name}`);
+        } else {
+          keptCount++;
+        }
+      }
+
+      return successResponse({
+        message: "Cleanup complete",
+        deletedCount,
+        keptCount,
+        totalProcessed: deletedCount + keptCount
+      }, origin);
+    } catch (error) {
+      return errorResponse("Failed to cleanup", 500, origin, error.message);
+    }
+  }
+
   return new Response(JSON.stringify({
     error: "Not found",
     endpoints: [
-      "GET /devices - Get all current device states",
+      "GET /devices - Get all HVAC device states",
       "GET /device/{deviceId} - Get state for specific device",
       "GET /history/{deviceId} - Get event history for specific device",
       "GET /rebalance - Trigger HVAC rebalancing",
       "GET /rebalance-status - Get last rebalancing status",
-      "GET /rebalance-commands - Get pending rebalancing commands"
+      "GET /rebalance-commands - Get pending rebalancing commands",
+      "GET /cleanup - Remove non-HVAC devices from KV storage"
     ]
   }), { status: 404, headers: corsHeaders(origin) });
 }
@@ -380,19 +413,29 @@ async function handleEvent(body, env) {
   for (const event of events) {
     if (event.eventType === "DEVICE_EVENT") {
       const { deviceId, capability, attribute, value, unit, componentId } = event.deviceEvent;
-      
+
       // Check if this is one of the attributes we track
       const isTracked = TRACKED_ATTRIBUTES.some(t => t.attribute === attribute);
-      
+
       if (isTracked) {
+        // Special handling for switch events: only save for HVAC devices (devices with temperature)
+        if (attribute === "switch") {
+          const existingData = await env.SMARTAPP_STORAGE.get(`device:${deviceId}`, "json");
+          // Only save switch events for devices that have temperature (thermostats)
+          if (!existingData || !existingData.temperature) {
+            console.log(`⏭️  Skipping switch event for non-HVAC device ${deviceId}`);
+            continue; // Skip this event
+          }
+        }
+
         console.log(`📡 Event: ${attribute} = ${value} (${deviceId})`);
         await saveEvent(env, deviceId, attribute, value, unit, componentId);
       }
     }
   }
 
-  return new Response(JSON.stringify({ statusCode: 200 }), { 
-    status: 200, headers: { "Content-Type": "application/json" } 
+  return new Response(JSON.stringify({ statusCode: 200 }), {
+    status: 200, headers: { "Content-Type": "application/json" }
   });
 }
 
