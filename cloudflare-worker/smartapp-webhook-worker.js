@@ -795,9 +795,23 @@ function analyzeHVACSystem(devices) {
 
     // Track zones by mode
     if (mode === "heat") {
-      heatingZones.push({ deviceId, device, temp, setpoint: heatSetpoint, operatingState });
+      heatingZones.push({
+        deviceId,
+        device,
+        temp,
+        setpoint: heatSetpoint, // Used for logic
+        actualSetpoint: device.heatingSetpoint, // Actual device value
+        operatingState
+      });
     } else if (mode === "cool") {
-      coolingZones.push({ deviceId, device, temp, setpoint: coolSetpoint, operatingState });
+      coolingZones.push({
+        deviceId,
+        device,
+        temp,
+        setpoint: coolSetpoint, // Used for logic
+        actualSetpoint: device.coolingSetpoint, // Actual device value
+        operatingState
+      });
     }
 
     // Check for inefficiencies - ONLY if unit is actively running
@@ -835,14 +849,14 @@ function analyzeHVACSystem(devices) {
         deviceId: z.deviceId,
         label: z.device.label,
         temp: z.temp,
-        setpoint: z.setpoint,
+        setpoint: z.actualSetpoint || z.setpoint, // Show actual, fallback to default
         operatingState: z.operatingState
       })),
       cooling: coolingZones.map(z => ({
         deviceId: z.deviceId,
         label: z.device.label,
         temp: z.temp,
-        setpoint: z.setpoint,
+        setpoint: z.actualSetpoint || z.setpoint, // Show actual, fallback to default
         operatingState: z.operatingState
       }))
     });
@@ -923,6 +937,57 @@ function generateRebalancingCommands(analysis) {
                 reason: `${zone.label} is cooling but has reached target temperature`
               });
               processedDevices.add(zone.deviceId);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Align modes for idle/off zones to match the dominant mode
+  // This ensures that when someone turns on a zone, it's in the appropriate mode
+  if (analysis.conflicts.length > 0) {
+    for (const conflict of analysis.conflicts) {
+      if (conflict.type === "heating-cooling-conflict") {
+        // Determine dominant mode (more actively running zones)
+        const activeHeating = analysis.heatingZones.filter(z => z.operatingState === "heating").length;
+        const activeCooling = analysis.coolingZones.filter(z => z.operatingState === "cooling").length;
+
+        let targetMode = null;
+        if (activeHeating > activeCooling) {
+          targetMode = "heat";
+        } else if (activeCooling > activeHeating) {
+          targetMode = "cool";
+        }
+        // If equal or both zero, don't align (no clear dominant mode)
+
+        if (targetMode) {
+          // Change idle zones in minority mode to match dominant mode
+          if (targetMode === "heat") {
+            // Change idle cooling zones to heat mode
+            for (const zone of conflict.cooling) {
+              if (zone.operatingState === "idle" && !processedDevices.has(zone.deviceId)) {
+                commands.push({
+                  deviceId: zone.deviceId,
+                  action: "setThermostatMode",
+                  value: "heat",
+                  reason: `${zone.label} is idle in COOL mode - changing to HEAT to match active zones`
+                });
+                processedDevices.add(zone.deviceId);
+              }
+            }
+          } else {
+            // Change idle heating zones to cool mode
+            for (const zone of conflict.heating) {
+              if (zone.operatingState === "idle" && !processedDevices.has(zone.deviceId)) {
+                commands.push({
+                  deviceId: zone.deviceId,
+                  action: "setThermostatMode",
+                  value: "cool",
+                  reason: `${zone.label} is idle in HEAT mode - changing to COOL to match active zones`
+                });
+                processedDevices.add(zone.deviceId);
+              }
             }
           }
         }
