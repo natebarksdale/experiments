@@ -594,9 +594,69 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
         value,
         unit,
         timestamp,
-        fullState: currentState 
+        fullState: currentState
       })
     }).catch(err => console.error("Sheets Error:", err));
+  }
+
+  // 6. Smart Event-Driven Rebalancing (KV-efficient)
+  // Trigger rebalancing if temperature deviation is significant
+  if (attribute === "temperature") {
+    await checkAndTriggerRebalancing(env, currentState, value);
+  }
+}
+
+/**
+ * Check if temperature event should trigger rebalancing
+ * Only triggers if:
+ * 1. Temperature deviates significantly from target (±3°F)
+ * 2. Haven't rebalanced in the last hour (rate limiting)
+ */
+async function checkAndTriggerRebalancing(env, deviceState, temperature) {
+  try {
+    const mode = deviceState.thermostatMode;
+    if (!mode || mode === "off") return; // Skip if thermostat is off
+
+    // Get target setpoint based on mode
+    const coolSetpoint = deviceState.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
+    const heatSetpoint = deviceState.heatingSetpoint || deviceState.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
+
+    // Check for significant deviation
+    const TRIGGER_THRESHOLD = 3; // °F deviation to trigger rebalancing
+    let shouldTrigger = false;
+
+    if (mode === "cool" && temperature > coolSetpoint + TRIGGER_THRESHOLD) {
+      console.log(`🌡️  ${deviceState.label}: Significant overheat detected (${temperature}°F > ${coolSetpoint + TRIGGER_THRESHOLD}°F)`);
+      shouldTrigger = true;
+    } else if (mode === "heat" && temperature < heatSetpoint - TRIGGER_THRESHOLD) {
+      console.log(`🌡️  ${deviceState.label}: Significant underheat detected (${temperature}°F < ${heatSetpoint - TRIGGER_THRESHOLD}°F)`);
+      shouldTrigger = true;
+    }
+
+    if (!shouldTrigger) return;
+
+    // Rate limiting: Check last rebalancing time
+    const lastRebalance = await env.SMARTAPP_STORAGE.get("rebalance:status", "json");
+    if (lastRebalance?.lastRun) {
+      const timeSinceLastRun = Date.now() - new Date(lastRebalance.lastRun).getTime();
+      const ONE_HOUR = 60 * 60 * 1000;
+
+      if (timeSinceLastRun < ONE_HOUR) {
+        console.log(`⏱️  Skipping rebalancing - last run was ${Math.round(timeSinceLastRun / 60000)} minutes ago`);
+        return;
+      }
+    }
+
+    // Trigger rebalancing in background (non-blocking)
+    console.log(`🔄 Triggering event-driven rebalancing due to ${deviceState.label} temperature deviation`);
+    // Use waitUntil if available (Cloudflare Workers feature)
+    const rebalancePromise = performRebalancing(env);
+
+    // Fire and forget - don't block the event handler
+    rebalancePromise.catch(err => console.error("Event-driven rebalancing error:", err));
+
+  } catch (error) {
+    console.error("Error in smart trigger check:", error);
   }
 }
 
@@ -990,47 +1050,58 @@ function generateRebalancingCommands(analysis) {
     }
   }
 
-  // 3. Align modes for idle/off zones to match the dominant mode
-  // This ensures that when someone turns on a zone, it's in the appropriate mode
+  // 3. Enforce mode alignment to match the dominant mode
+  // This syncs all thermostats in case someone used IR remote to change settings
   if (analysis.conflicts.length > 0) {
     for (const conflict of analysis.conflicts) {
       if (conflict.type === "heating-cooling-conflict") {
-        // Determine dominant mode (more actively running zones)
-        const activeHeating = analysis.heatingZones.filter(z => z.operatingState === "heating").length;
-        const activeCooling = analysis.coolingZones.filter(z => z.operatingState === "cooling").length;
+        // Determine dominant mode based on total zones (not just active)
+        // This represents the overall system intent
+        const totalHeating = analysis.heatingZones.length;
+        const totalCooling = analysis.coolingZones.length;
 
         let targetMode = null;
-        if (activeHeating > activeCooling) {
+        if (totalHeating > totalCooling) {
           targetMode = "heat";
-        } else if (activeCooling > activeHeating) {
+        } else if (totalCooling > totalHeating) {
           targetMode = "cool";
         }
-        // If equal or both zero, don't align (no clear dominant mode)
+        // If equal, prefer the mode with more active zones
+        else {
+          const activeHeating = analysis.heatingZones.filter(z => z.operatingState === "heating").length;
+          const activeCooling = analysis.coolingZones.filter(z => z.operatingState === "cooling").length;
+          if (activeHeating > activeCooling) {
+            targetMode = "heat";
+          } else if (activeCooling > activeHeating) {
+            targetMode = "cool";
+          }
+        }
 
         if (targetMode) {
-          // Change idle zones in minority mode to match dominant mode
+          // Change ALL zones in minority mode to match dominant mode
+          // This enforces desired state and corrects any IR remote changes
           if (targetMode === "heat") {
-            // Change idle cooling zones to heat mode
+            // Change ALL cooling zones to heat mode
             for (const zone of conflict.cooling) {
-              if (zone.operatingState === "idle" && !processedDevices.has(zone.deviceId)) {
+              if (!processedDevices.has(zone.deviceId)) {
                 commands.push({
                   deviceId: zone.deviceId,
                   action: "setThermostatMode",
                   value: "heat",
-                  reason: `${zone.label} is idle in COOL mode - changing to HEAT to match active zones`
+                  reason: `${zone.label} is in COOL mode - enforcing HEAT to match system mode (${totalHeating} heat vs ${totalCooling} cool)`
                 });
                 processedDevices.add(zone.deviceId);
               }
             }
           } else {
-            // Change idle heating zones to cool mode
+            // Change ALL heating zones to cool mode
             for (const zone of conflict.heating) {
-              if (zone.operatingState === "idle" && !processedDevices.has(zone.deviceId)) {
+              if (!processedDevices.has(zone.deviceId)) {
                 commands.push({
                   deviceId: zone.deviceId,
                   action: "setThermostatMode",
                   value: "cool",
-                  reason: `${zone.label} is idle in HEAT mode - changing to COOL to match active zones`
+                  reason: `${zone.label} is in HEAT mode - enforcing COOL to match system mode (${totalCooling} cool vs ${totalHeating} heat)`
                 });
                 processedDevices.add(zone.deviceId);
               }
