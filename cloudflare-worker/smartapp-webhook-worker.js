@@ -990,47 +990,58 @@ function generateRebalancingCommands(analysis) {
     }
   }
 
-  // 3. Align modes for idle/off zones to match the dominant mode
-  // This ensures that when someone turns on a zone, it's in the appropriate mode
+  // 3. Enforce mode alignment to match the dominant mode
+  // This syncs all thermostats in case someone used IR remote to change settings
   if (analysis.conflicts.length > 0) {
     for (const conflict of analysis.conflicts) {
       if (conflict.type === "heating-cooling-conflict") {
-        // Determine dominant mode (more actively running zones)
-        const activeHeating = analysis.heatingZones.filter(z => z.operatingState === "heating").length;
-        const activeCooling = analysis.coolingZones.filter(z => z.operatingState === "cooling").length;
+        // Determine dominant mode based on total zones (not just active)
+        // This represents the overall system intent
+        const totalHeating = analysis.heatingZones.length;
+        const totalCooling = analysis.coolingZones.length;
 
         let targetMode = null;
-        if (activeHeating > activeCooling) {
+        if (totalHeating > totalCooling) {
           targetMode = "heat";
-        } else if (activeCooling > activeHeating) {
+        } else if (totalCooling > totalHeating) {
           targetMode = "cool";
         }
-        // If equal or both zero, don't align (no clear dominant mode)
+        // If equal, prefer the mode with more active zones
+        else {
+          const activeHeating = analysis.heatingZones.filter(z => z.operatingState === "heating").length;
+          const activeCooling = analysis.coolingZones.filter(z => z.operatingState === "cooling").length;
+          if (activeHeating > activeCooling) {
+            targetMode = "heat";
+          } else if (activeCooling > activeHeating) {
+            targetMode = "cool";
+          }
+        }
 
         if (targetMode) {
-          // Change idle zones in minority mode to match dominant mode
+          // Change ALL zones in minority mode to match dominant mode
+          // This enforces desired state and corrects any IR remote changes
           if (targetMode === "heat") {
-            // Change idle cooling zones to heat mode
+            // Change ALL cooling zones to heat mode
             for (const zone of conflict.cooling) {
-              if (zone.operatingState === "idle" && !processedDevices.has(zone.deviceId)) {
+              if (!processedDevices.has(zone.deviceId)) {
                 commands.push({
                   deviceId: zone.deviceId,
                   action: "setThermostatMode",
                   value: "heat",
-                  reason: `${zone.label} is idle in COOL mode - changing to HEAT to match active zones`
+                  reason: `${zone.label} is in COOL mode - enforcing HEAT to match system mode (${totalHeating} heat vs ${totalCooling} cool)`
                 });
                 processedDevices.add(zone.deviceId);
               }
             }
           } else {
-            // Change idle heating zones to cool mode
+            // Change ALL heating zones to cool mode
             for (const zone of conflict.heating) {
-              if (zone.operatingState === "idle" && !processedDevices.has(zone.deviceId)) {
+              if (!processedDevices.has(zone.deviceId)) {
                 commands.push({
                   deviceId: zone.deviceId,
                   action: "setThermostatMode",
                   value: "cool",
-                  reason: `${zone.label} is idle in HEAT mode - changing to COOL to match active zones`
+                  reason: `${zone.label} is in HEAT mode - enforcing COOL to match system mode (${totalCooling} cool vs ${totalHeating} heat)`
                 });
                 processedDevices.add(zone.deviceId);
               }
