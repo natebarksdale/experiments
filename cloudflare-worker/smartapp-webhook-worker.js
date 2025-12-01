@@ -762,8 +762,11 @@ function analyzeHVACSystem(devices) {
   for (const [deviceId, device] of Object.entries(devices)) {
     const temp = device.temperature;
     const mode = device.thermostatMode;
+
+    // Cielo thermostats often use a single setpoint for both modes
+    // Use coolingSetpoint as fallback for heatingSetpoint if missing
     const coolSetpoint = device.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
-    const heatSetpoint = device.heatingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
+    const heatSetpoint = device.heatingSetpoint || device.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
 
     // Get operating state - use multiple sources in order of preference
     let operatingState = device.thermostatOperatingState;
@@ -800,7 +803,7 @@ function analyzeHVACSystem(devices) {
         device,
         temp,
         setpoint: heatSetpoint, // Used for logic
-        actualSetpoint: device.heatingSetpoint, // Actual device value
+        actualSetpoint: device.heatingSetpoint || device.coolingSetpoint, // Actual device value (fallback to cooling if heating not available)
         operatingState
       });
     } else if (mode === "cool") {
