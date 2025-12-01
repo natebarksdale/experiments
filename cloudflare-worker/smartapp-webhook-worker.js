@@ -594,9 +594,69 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
         value,
         unit,
         timestamp,
-        fullState: currentState 
+        fullState: currentState
       })
     }).catch(err => console.error("Sheets Error:", err));
+  }
+
+  // 6. Smart Event-Driven Rebalancing (KV-efficient)
+  // Trigger rebalancing if temperature deviation is significant
+  if (attribute === "temperature") {
+    await checkAndTriggerRebalancing(env, currentState, value);
+  }
+}
+
+/**
+ * Check if temperature event should trigger rebalancing
+ * Only triggers if:
+ * 1. Temperature deviates significantly from target (±3°F)
+ * 2. Haven't rebalanced in the last hour (rate limiting)
+ */
+async function checkAndTriggerRebalancing(env, deviceState, temperature) {
+  try {
+    const mode = deviceState.thermostatMode;
+    if (!mode || mode === "off") return; // Skip if thermostat is off
+
+    // Get target setpoint based on mode
+    const coolSetpoint = deviceState.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_COOL_SETPOINT;
+    const heatSetpoint = deviceState.heatingSetpoint || deviceState.coolingSetpoint || REBALANCE_CONFIG.DEFAULT_HEAT_SETPOINT;
+
+    // Check for significant deviation
+    const TRIGGER_THRESHOLD = 3; // °F deviation to trigger rebalancing
+    let shouldTrigger = false;
+
+    if (mode === "cool" && temperature > coolSetpoint + TRIGGER_THRESHOLD) {
+      console.log(`🌡️  ${deviceState.label}: Significant overheat detected (${temperature}°F > ${coolSetpoint + TRIGGER_THRESHOLD}°F)`);
+      shouldTrigger = true;
+    } else if (mode === "heat" && temperature < heatSetpoint - TRIGGER_THRESHOLD) {
+      console.log(`🌡️  ${deviceState.label}: Significant underheat detected (${temperature}°F < ${heatSetpoint - TRIGGER_THRESHOLD}°F)`);
+      shouldTrigger = true;
+    }
+
+    if (!shouldTrigger) return;
+
+    // Rate limiting: Check last rebalancing time
+    const lastRebalance = await env.SMARTAPP_STORAGE.get("rebalance:status", "json");
+    if (lastRebalance?.lastRun) {
+      const timeSinceLastRun = Date.now() - new Date(lastRebalance.lastRun).getTime();
+      const ONE_HOUR = 60 * 60 * 1000;
+
+      if (timeSinceLastRun < ONE_HOUR) {
+        console.log(`⏱️  Skipping rebalancing - last run was ${Math.round(timeSinceLastRun / 60000)} minutes ago`);
+        return;
+      }
+    }
+
+    // Trigger rebalancing in background (non-blocking)
+    console.log(`🔄 Triggering event-driven rebalancing due to ${deviceState.label} temperature deviation`);
+    // Use waitUntil if available (Cloudflare Workers feature)
+    const rebalancePromise = performRebalancing(env);
+
+    // Fire and forget - don't block the event handler
+    rebalancePromise.catch(err => console.error("Event-driven rebalancing error:", err));
+
+  } catch (error) {
+    console.error("Error in smart trigger check:", error);
   }
 }
 
