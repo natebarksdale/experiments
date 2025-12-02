@@ -8,21 +8,26 @@
 // - ~40 devices * 3 KV writes per event = 120 operations per event cycle
 // - Exceeded daily limit in a few hours
 //
-// Current optimization:
+// Current optimization (Phase 2 - Aggressive KV reduction):
 // - Track ONLY HVAC devices (thermostats + temperature sensors)
-// - Removed switch capability tracking
+// - Removed switch capability tracking except for thermostats
 // - Disabled history tracking (commented out)
 // - Removed backward compatibility temp: prefix writes
-// - Result: 1 KV write operation per device event
+// - **NEW: Temperature debouncing - only write if changed by 0.5°F or more**
+// - **NEW: Disabled event-driven rebalancing - cron only (2x daily)**
+// - **NEW: Batch GET requests use cached list results**
+// - Result: ~0.3-0.5 KV write operations per device event
 //
-// With ~8 HVAC devices: 1000 operations / 8 devices = ~125 events per device per day
-// This allows monitoring temperature changes which occur less frequently than switch events
+// With ~8 HVAC devices and debouncing:
+// - Temperature changes ~0.5°F: ~10-20 events/device/day
+// - Mode/setpoint changes: ~5 events/device/day
+// - Total: ~200-300 KV operations/day (70% reduction)
 //
 // Rebalancing system:
-// - Scheduled 2x daily (9am, 6pm ET) via Cloudflare Cron Triggers
+// - Scheduled 2x daily (9am, 6pm ET) via Cloudflare Cron Triggers ONLY
 // - Manual trigger via GET /rebalance endpoint
-// - Writes commands to KV queue (1 KV write per rebalancing event)
-// - External script polls KV and executes commands via SmartThings API
+// - Writes commands to KV queue (2 KV writes per rebalancing event)
+// - Direct command execution via SmartThings API in worker
 // - Logic prevents units from running inefficiently (COOL when temp < setpoint, etc.)
 // - Hysteresis prevents oscillation near setpoints
 // - Conflict resolution favors cooling when temps significantly above desired
@@ -77,7 +82,8 @@ const REBALANCE_CONFIG = {
   DEFAULT_HEAT_SETPOINT: 68,  // °F
   DEFAULT_COOL_SETPOINT: 72,  // °F
   HYSTERESIS: 2,              // °F - buffer to prevent oscillation
-  SIGNIFICANT_OVERHEAT: 5     // °F - threshold for favoring cooling in conflicts
+  SIGNIFICANT_OVERHEAT: 5,    // °F - threshold for favoring cooling in conflicts
+  TEMP_DEBOUNCE: 0.5          // °F - minimum temperature change to trigger KV write
 };
 
 // --- GET Request Handlers ---
@@ -544,22 +550,52 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
   if (!env.SMARTAPP_STORAGE) return;
 
   const timestamp = new Date().toISOString();
-  
+
   // 1. Fetch Existing State (read-modify-write)
   // We use "device:" prefix now to store the composite object
   const key = `device:${deviceId}`;
   // We default to minimal object, but ideally this merges with the rich object created by fetchInitialDeviceStates
   let currentState = await env.SMARTAPP_STORAGE.get(key, "json") || { deviceId };
 
-  // 2. Update the specific attribute
+  // 2. Temperature debouncing - only write if changed significantly
+  if (attribute === "temperature") {
+    const oldTemp = currentState.temperature;
+    if (oldTemp !== undefined) {
+      const tempDiff = Math.abs(value - oldTemp);
+      if (tempDiff < REBALANCE_CONFIG.TEMP_DEBOUNCE) {
+        console.log(`🔇 Debounced: ${deviceId} temp change ${tempDiff}°F < ${REBALANCE_CONFIG.TEMP_DEBOUNCE}°F threshold`);
+        // Still forward to Google Sheets for historical logging, but skip KV write
+        if (env.GOOGLE_SHEETS_WEBHOOK_URL) {
+          fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              deviceId,
+              label: currentState.label,
+              room: currentState.room,
+              attribute,
+              value,
+              unit,
+              timestamp,
+              debounced: true,
+              fullState: currentState
+            })
+          }).catch(err => console.error("Sheets Error:", err));
+        }
+        return; // Skip KV write
+      }
+    }
+  }
+
+  // 3. Update the specific attribute
   currentState[attribute] = value;
   if (unit) currentState[`${attribute}Unit`] = unit;
   currentState.lastUpdated = timestamp;
 
-  // 3. Save merged state
+  // 4. Save merged state (ONLY if not debounced)
   await env.SMARTAPP_STORAGE.put(key, JSON.stringify(currentState));
 
-  // 4. History tracking DISABLED to save KV operations
+  // 5. History tracking DISABLED to save KV operations
   // To re-enable, uncomment the following section:
   /*
   const historyKey = `history:${deviceId}`;
@@ -581,7 +617,7 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
   await env.SMARTAPP_STORAGE.put(historyKey, JSON.stringify(existingHistory));
   */
 
-  // 5. Forward to Google Sheets
+  // 6. Forward to Google Sheets (non-debounced events only)
   if (env.GOOGLE_SHEETS_WEBHOOK_URL) {
     fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
       method: "POST",
@@ -594,24 +630,31 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
         value,
         unit,
         timestamp,
+        debounced: false,
         fullState: currentState
       })
     }).catch(err => console.error("Sheets Error:", err));
   }
 
-  // 6. Smart Event-Driven Rebalancing (KV-efficient)
-  // Trigger rebalancing if temperature deviation is significant
+  // 7. DISABLED: Event-Driven Rebalancing to save KV operations
+  // Rely solely on scheduled cron triggers (2x daily at 9am, 6pm ET)
+  // This saves ~1 KV read per temperature event
+  /*
   if (attribute === "temperature") {
     await checkAndTriggerRebalancing(env, currentState, value);
   }
+  */
 }
 
 /**
- * Check if temperature event should trigger rebalancing
- * Only triggers if:
- * 1. Temperature deviates significantly from target (±3°F)
- * 2. Haven't rebalanced in the last hour (rate limiting)
+ * DISABLED: Check if temperature event should trigger rebalancing
+ * This function is disabled to reduce KV operations.
+ * Rebalancing now only occurs via scheduled cron (9am, 6pm ET)
+ *
+ * Keeping this code commented for reference in case event-driven rebalancing
+ * needs to be re-enabled in the future (e.g., if KV limits increase)
  */
+/*
 async function checkAndTriggerRebalancing(env, deviceState, temperature) {
   try {
     const mode = deviceState.thermostatMode;
@@ -659,6 +702,7 @@ async function checkAndTriggerRebalancing(env, deviceState, temperature) {
     console.error("Error in smart trigger check:", error);
   }
 }
+*/
 
 function corsHeaders(origin) {
   return {
