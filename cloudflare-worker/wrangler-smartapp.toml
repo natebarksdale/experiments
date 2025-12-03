@@ -22,15 +22,15 @@ id = "6bdb56f9413f49b3a30f84b0b282c115"
 # https://developers.cloudflare.com/workers/platform/pricing/
 
 # Scheduled Cron Triggers for HVAC Rebalancing
-# Runs at 9:00 AM and 6:00 PM Eastern Time (ET)
-# Note: Cron runs in UTC, so times are adjusted for Eastern Time
-# - 9:00 AM ET = 2:00 PM UTC (during EST) or 1:00 PM UTC (during EDT)
-# - 6:00 PM ET = 11:00 PM UTC (during EST) or 10:00 PM UTC (during EDT)
-# Using conservative UTC times to ensure coverage across DST transitions
+# Runs every 2 hours (12 times per day) for proactive HVAC optimization
+# This catches IR remote changes, temperature drift, and mode conflicts
+# KV cost: ~24 operations/day (12 runs × 2 KV ops each)
+#
+# Schedule (in UTC, covers 24-hour period):
+# - Every even hour: 00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00
 [triggers]
 crons = [
-  "0 14 * * *",  # 9:00 AM ET (standard time)
-  "0 23 * * *"   # 6:00 PM ET (standard time)
+  "0 */2 * * *"  # Every 2 hours
 ]
 
 # Optional: Google Sheets webhook URL for syncing temperature data

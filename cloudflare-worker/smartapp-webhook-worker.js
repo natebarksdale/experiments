@@ -24,9 +24,9 @@
 // - Total: ~200-300 KV operations/day (70% reduction)
 //
 // Rebalancing system:
-// - Scheduled 2x daily (9am, 6pm ET) via Cloudflare Cron Triggers ONLY
+// - Scheduled every 2 hours (12x daily) via Cloudflare Cron Triggers
 // - Manual trigger via GET /rebalance endpoint
-// - Writes commands to KV queue (2 KV writes per rebalancing event)
+// - Writes commands to KV queue (2 KV writes per rebalancing event = 24 ops/day)
 // - Direct command execution via SmartThings API in worker
 // - Logic prevents units from running inefficiently (COOL when temp < setpoint, etc.)
 // - Hysteresis prevents oscillation near setpoints
@@ -637,8 +637,9 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
   }
 
   // 7. DISABLED: Event-Driven Rebalancing to save KV operations
-  // Rely solely on scheduled cron triggers (2x daily at 9am, 6pm ET)
+  // Rely solely on scheduled cron triggers (every 2 hours)
   // This saves ~1 KV read per temperature event
+  // Note: Could be re-enabled for EXTREME deviations (≥7°F) if needed
   /*
   if (attribute === "temperature") {
     await checkAndTriggerRebalancing(env, currentState, value);
@@ -649,10 +650,10 @@ async function saveEvent(env, deviceId, attribute, value, unit, componentId) {
 /**
  * DISABLED: Check if temperature event should trigger rebalancing
  * This function is disabled to reduce KV operations.
- * Rebalancing now only occurs via scheduled cron (9am, 6pm ET)
+ * Rebalancing now occurs via scheduled cron (every 2 hours)
  *
  * Keeping this code commented for reference in case event-driven rebalancing
- * needs to be re-enabled in the future (e.g., if KV limits increase)
+ * needs to be re-enabled for EXTREME deviations (e.g., ≥7°F emergency response)
  */
 /*
 async function checkAndTriggerRebalancing(env, deviceState, temperature) {
