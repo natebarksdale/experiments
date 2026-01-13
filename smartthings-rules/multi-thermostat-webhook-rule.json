@@ -1,0 +1,112 @@
+{
+  "name": "All Thermostats Temperature Alert",
+  "actions": [
+    {
+      "every": {
+        "interval": {
+          "value": 15,
+          "unit": "Minute"
+        },
+        "actions": [
+          {
+            "command": {
+              "devices": [
+                "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
+                "8051fd90-ab24-467c-8746-3dadbce02252",
+                "87f9fbe2-f6b7-4877-9486-01b896a0acb5",
+                "999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147",
+                "c44c9f12-1029-43c0-af5f-a5ff572d37c7",
+                "8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd",
+                "dd6b54be-a667-4acc-a112-d89c9923c29d",
+                "9ced4ff7-4376-47c8-b882-5724bfb14306"
+              ],
+              "commands": []
+            },
+            "location": {
+              "method": "POST",
+              "url": "https://YOUR_WEBHOOK_URL/thermostat-readings",
+              "contentType": "application/json",
+              "body": {
+                "timestamp": "{{$now}}",
+                "readings": [
+                  {
+                    "location": "NBs Office",
+                    "deviceId": "8021826e-78ca-4f3d-bd33-bdac1cadd3f2",
+                    "temperature": "{{device:8021826e-78ca-4f3d-bd33-bdac1cadd3f2.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:8021826e-78ca-4f3d-bd33-bdac1cadd3f2.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:8021826e-78ca-4f3d-bd33-bdac1cadd3f2.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:8021826e-78ca-4f3d-bd33-bdac1cadd3f2.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:8021826e-78ca-4f3d-bd33-bdac1cadd3f2.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Basement",
+                    "deviceId": "8051fd90-ab24-467c-8746-3dadbce02252",
+                    "temperature": "{{device:8051fd90-ab24-467c-8746-3dadbce02252.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:8051fd90-ab24-467c-8746-3dadbce02252.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:8051fd90-ab24-467c-8746-3dadbce02252.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:8051fd90-ab24-467c-8746-3dadbce02252.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:8051fd90-ab24-467c-8746-3dadbce02252.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Denn",
+                    "deviceId": "87f9fbe2-f6b7-4877-9486-01b896a0acb5",
+                    "temperature": "{{device:87f9fbe2-f6b7-4877-9486-01b896a0acb5.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:87f9fbe2-f6b7-4877-9486-01b896a0acb5.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:87f9fbe2-f6b7-4877-9486-01b896a0acb5.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:87f9fbe2-f6b7-4877-9486-01b896a0acb5.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:87f9fbe2-f6b7-4877-9486-01b896a0acb5.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Front Hall",
+                    "deviceId": "999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147",
+                    "temperature": "{{device:999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:999d0c8c-2caa-4ea6-a7ef-f8d73d1a5147.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Jrs Office",
+                    "deviceId": "c44c9f12-1029-43c0-af5f-a5ff572d37c7",
+                    "temperature": "{{device:c44c9f12-1029-43c0-af5f-a5ff572d37c7.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:c44c9f12-1029-43c0-af5f-a5ff572d37c7.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:c44c9f12-1029-43c0-af5f-a5ff572d37c7.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:c44c9f12-1029-43c0-af5f-a5ff572d37c7.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:c44c9f12-1029-43c0-af5f-a5ff572d37c7.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Kids Bedroom",
+                    "deviceId": "8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd",
+                    "temperature": "{{device:8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:8f5a0b61-76de-4add-bcb7-9cb5e7e8d3bd.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Main Kitchen",
+                    "deviceId": "dd6b54be-a667-4acc-a112-d89c9923c29d",
+                    "temperature": "{{device:dd6b54be-a667-4acc-a112-d89c9923c29d.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:dd6b54be-a667-4acc-a112-d89c9923c29d.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:dd6b54be-a667-4acc-a112-d89c9923c29d.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:dd6b54be-a667-4acc-a112-d89c9923c29d.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:dd6b54be-a667-4acc-a112-d89c9923c29d.thermostatOperatingState.thermostatOperatingState.value}}"
+                  },
+                  {
+                    "location": "Primary Bedroom",
+                    "deviceId": "9ced4ff7-4376-47c8-b882-5724bfb14306",
+                    "temperature": "{{device:9ced4ff7-4376-47c8-b882-5724bfb14306.temperatureMeasurement.temperature.value}}",
+                    "unit": "{{device:9ced4ff7-4376-47c8-b882-5724bfb14306.temperatureMeasurement.temperature.unit}}",
+                    "humidity": "{{device:9ced4ff7-4376-47c8-b882-5724bfb14306.relativeHumidityMeasurement.humidity.value}}",
+                    "mode": "{{device:9ced4ff7-4376-47c8-b882-5724bfb14306.thermostatMode.thermostatMode.value}}",
+                    "operatingState": "{{device:9ced4ff7-4376-47c8-b882-5724bfb14306.thermostatOperatingState.thermostatOperatingState.value}}"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
