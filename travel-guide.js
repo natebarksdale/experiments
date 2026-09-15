@@ -2328,8 +2328,10 @@ function setReasoningModeIndex(model, index) {
     try { localStorage.setItem(`travel_guide_reasoning_mode:${model}`, String(index)); } catch (e) { /* ignore */ }
 }
 
+// OpenRouter reports an unsupported reasoning setting either as a 400 that mentions
+// reasoning, or as a 404 "No endpoints found" once the parameter filters out every host.
 function isReasoningSettingError(message) {
-    return message.includes('(400)') && /reason/i.test(message);
+    return /reason/i.test(message) || (/404/.test(message) && /endpoint/i.test(message));
 }
 
 async function callLLM(prompt, maxTokens = 2000) {
@@ -2339,8 +2341,7 @@ async function callLLM(prompt, maxTokens = 2000) {
         try {
             return await callLLMOnce(prompt, maxTokens, REASONING_MODES[modeIndex]);
         } catch (error) {
-            const msg = error.message || '';
-            if (modeIndex < REASONING_MODES.length - 1 && isReasoningSettingError(msg)) {
+            if (modeIndex < REASONING_MODES.length - 1 && error.reasoningRejected) {
                 console.warn(`${model} rejected reasoning setting ${JSON.stringify(REASONING_MODES[modeIndex])}; retrying with the next option`);
                 modeIndex++;
                 setReasoningModeIndex(model, modeIndex);
@@ -2443,6 +2444,12 @@ async function callLLMOnce(prompt, maxTokens, reasoning) {
             throw new Error(`Request timed out after ${LLM_TIMEOUT_MS / 1000} seconds. Try again or pick a faster model.`);
         }
         const msg = error.message || '';
+        if (reasoning && isReasoningSettingError(msg)) {
+            // Let callLLM retry with a different reasoning setting before we reword anything
+            const rejected = new Error(msg);
+            rejected.reasoningRejected = true;
+            throw rejected;
+        }
         if (msg.includes('403') && /origin/i.test(msg)) {
             throw new Error('The API proxy rejected this site\'s origin. Open the guide from its published URL, or save a personal API key in settings.');
         } else if (msg.includes('401') || msg.includes('403')) {
