@@ -47,10 +47,24 @@ function getValidApiKey() {
     return decodeApiKey(DEFAULT_API_KEY);
 }
 
+// Has the user saved their own OpenRouter key in this browser?
+function hasPersonalApiKey() {
+    const stored = localStorage.getItem('openrouter_api_key');
+    return !!(stored && stored.trim());
+}
+
+// Should requests go through the Cloudflare Worker proxy?
+// The proxy carries its own server-side key, so a personal key saved in settings
+// would be ignored if we sent it there. When the user has saved a personal key,
+// call OpenRouter directly with it instead.
+function usesProxy() {
+    const hasWorker = !!(CLOUDFLARE_WORKER_URL && CLOUDFLARE_WORKER_URL.trim() !== '');
+    return hasWorker && !hasPersonalApiKey();
+}
+
 // Check if we have API access (either via key or Cloudflare Worker)
 function hasApiAccess() {
-    // If using Cloudflare Worker, we have API access regardless of client-side key
-    if (CLOUDFLARE_WORKER_URL && CLOUDFLARE_WORKER_URL !== null && CLOUDFLARE_WORKER_URL.trim() !== '') {
+    if (usesProxy()) {
         return true;
     }
     // Otherwise, check if we have a valid client-side API key
@@ -1863,7 +1877,9 @@ function resetToDefaultKey() {
     AppState.apiKey = getValidApiKey();
     document.getElementById('apiKeyInput').value = '';
 
-    if (AppState.apiKey) {
+    if (usesProxy()) {
+        showNotification('Reset to the site\'s shared key', 'success');
+    } else if (AppState.apiKey) {
         showNotification('Reset to free-tier API key', 'success');
     } else {
         showNotification('No default API key available. Please enter your own OpenRouter API key.', 'error');
@@ -1879,12 +1895,14 @@ function isUsingDefaultKey() {
 function updateApiKeyStatus() {
     const statusElement = document.getElementById('apiKeyStatus');
     if (statusElement) {
-        if (!AppState.apiKey) {
+        if (hasPersonalApiKey()) {
+            statusElement.innerHTML = '<span style="color: #2196F3;">✓ Using your personal API key (calls OpenRouter directly)</span>';
+        } else if (usesProxy()) {
+            statusElement.innerHTML = '<span style="color: #4CAF50;">✓ Using the site\'s shared key via proxy</span>';
+        } else if (!AppState.apiKey) {
             statusElement.innerHTML = '<span style="color: #f44336;">⚠ No API key set - please add your OpenRouter API key</span>';
-        } else if (isUsingDefaultKey()) {
-            statusElement.innerHTML = '<span style="color: #4CAF50;">✓ Using shared free-tier key (free models only)</span>';
         } else {
-            statusElement.innerHTML = '<span style="color: #2196F3;">✓ Using your personal API key</span>';
+            statusElement.innerHTML = '<span style="color: #4CAF50;">✓ Using shared free-tier key (free models only)</span>';
         }
     }
 }
@@ -2162,22 +2180,43 @@ Return valid JSON:
   ]
 }`;
 
-    const response = await callLLM(prompt, 1800);
+    // 5 categories x 3 items of 2-3 sentences plus JSON overhead regularly runs past
+    // 1800 tokens, which truncated the JSON and broke every search. Output tokens on
+    // the cheap models this app targets cost a fraction of a cent, so give it room.
+    const response = await callLLM(prompt, 4000);
 
     // Parse JSON response
     let placeData;
-    try {
-        // Extract JSON from response
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            placeData = JSON.parse(jsonMatch[0]);
-        } else {
-            throw new Error('No JSON found in response');
-        }
-    } catch (error) {
-        console.error('Failed to parse JSON:', error);
+    const jsonStart = response.indexOf('{');
+    if (jsonStart < 0) {
+        console.error('No JSON found in response:', response.slice(0, 200));
         throw new Error('Failed to parse location data');
     }
+    const jsonText = response.slice(jsonStart, response.lastIndexOf('}') + 1 || undefined);
+    try {
+        placeData = JSON.parse(jsonText);
+    } catch (error) {
+        // Most likely a response cut off at the token cap; keep whatever complete categories we got
+        placeData = repairTruncatedJson(response.slice(jsonStart));
+        if (placeData) {
+            console.warn('Recovered a truncated JSON response');
+        } else {
+            console.error('Failed to parse JSON:', error);
+            throw new Error('Failed to parse location data');
+        }
+    }
+
+    // Keep only categories that have the full 2-truths-and-a-lie set
+    if (!Array.isArray(placeData.categories)) {
+        throw new Error('Failed to parse location data');
+    }
+    placeData.categories = placeData.categories
+        .filter(category => Array.isArray(category.items) && category.items.length >= 3)
+        .map(category => ({ ...category, items: category.items.slice(0, 3) }));
+    if (placeData.categories.length === 0) {
+        throw new Error('Failed to parse location data');
+    }
+    placeData.name = placeData.name || location;
 
     // Randomize the order of items in each category so the false one isn't always in the same position
     placeData.categories.forEach(category => {
@@ -2195,13 +2234,19 @@ Return valid JSON:
 }
 
 // Call OpenRouter LLM (via Cloudflare Worker or direct)
+const LLM_TIMEOUT_MS = 90000; // Abort a request that hangs instead of spinning forever
+
 async function callLLM(prompt, maxTokens = 2000) {
+    // Determine which endpoint to use
+    const useProxy = usesProxy();
+    const endpoint = useProxy
+        ? CLOUDFLARE_WORKER_URL
+        : 'https://openrouter.ai/api/v1/chat/completions';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+
     try {
-        // Determine which endpoint to use
-        const useProxy = CLOUDFLARE_WORKER_URL && CLOUDFLARE_WORKER_URL !== null;
-        const endpoint = useProxy
-            ? CLOUDFLARE_WORKER_URL
-            : 'https://openrouter.ai/api/v1/chat/completions';
 
         // Build headers
         const headers = {
@@ -2218,6 +2263,7 @@ async function callLLM(prompt, maxTokens = 2000) {
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: headers,
+            signal: controller.signal,
             body: JSON.stringify({
                 model: AppState.currentModel,
                 messages: [
@@ -2257,18 +2303,79 @@ async function callLLM(prompt, maxTokens = 2000) {
             throw new Error('Invalid response format from API');
         }
 
-        return data.choices[0].message.content;
+        const choice = data.choices[0];
+        if (choice.finish_reason === 'length') {
+            console.warn(`LLM output hit the ${maxTokens}-token cap (model: ${data.model || AppState.currentModel}); response may be truncated`);
+        }
+
+        const content = choice.message.content;
+        if (typeof content !== 'string' || content.trim() === '') {
+            throw new Error('The model returned an empty response. Try again or pick a different model.');
+        }
+
+        return content;
     } catch (error) {
         console.error('LLM API Error:', error);
-        if (error.message.includes('401') || error.message.includes('403')) {
-            throw new Error('Invalid API key. Please check your OpenRouter API key in settings.');
-        } else if (error.message.includes('429')) {
+        if (error.name === 'AbortError') {
+            throw new Error(`Request timed out after ${LLM_TIMEOUT_MS / 1000} seconds. Try again or pick a faster model.`);
+        }
+        const msg = error.message || '';
+        if (msg.includes('403') && /origin/i.test(msg)) {
+            throw new Error('The API proxy rejected this site\'s origin. Open the guide from its published URL, or save a personal API key in settings.');
+        } else if (msg.includes('401') || msg.includes('403')) {
+            throw new Error(useProxy
+                ? 'The proxy\'s OpenRouter key was rejected. Check the worker\'s OPENROUTER_API_KEY secret, or save a personal API key in settings.'
+                : 'Invalid API key. Please check your OpenRouter API key in settings.');
+        } else if (msg.includes('404')) {
+            throw new Error(`Model "${AppState.currentModel}" was not found on OpenRouter. Pick a different model in settings.`);
+        } else if (msg.includes('429')) {
             throw new Error('Rate limit exceeded. Please wait a moment and try again.');
-        } else if (error.message.includes('insufficient')) {
-            throw new Error('Insufficient credits on your OpenRouter account.');
+        } else if (msg.includes('402') || /insufficient/i.test(msg)) {
+            throw new Error('Insufficient credits on the OpenRouter account.');
         }
         throw error;
+    } finally {
+        clearTimeout(timeoutId);
     }
+}
+
+// Salvage a JSON object that was cut off mid-stream (finish_reason "length").
+// Repeatedly trims back to the last closing brace, closes any open brackets,
+// and tries to parse. Returns null if nothing parseable remains.
+function repairTruncatedJson(text) {
+    let candidate = text;
+    for (let attempt = 0; attempt < 200; attempt++) {
+        const cut = candidate.lastIndexOf('}');
+        if (cut < 0) return null;
+        candidate = candidate.slice(0, cut + 1);
+
+        // Track open brackets, ignoring anything inside string literals
+        const stack = [];
+        let inString = false;
+        let escaped = false;
+        for (const ch of candidate) {
+            if (inString) {
+                if (escaped) escaped = false;
+                else if (ch === '\\') escaped = true;
+                else if (ch === '"') inString = false;
+                continue;
+            }
+            if (ch === '"') inString = true;
+            else if (ch === '{') stack.push('}');
+            else if (ch === '[') stack.push(']');
+            else if (ch === '}' || ch === ']') stack.pop();
+        }
+
+        if (!inString) {
+            try {
+                return JSON.parse(candidate + stack.reverse().join(''));
+            } catch (e) {
+                // fall through and trim further
+            }
+        }
+        candidate = candidate.slice(0, cut);
+    }
+    return null;
 }
 
 // Extract place names from content and geocode them
