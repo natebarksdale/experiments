@@ -2154,7 +2154,7 @@ async function generatePlaceContent(location) {
     // Generate content - optimized prompt for speed
     const prompt = `Travel guide for "${location}". ${writingStyle.prompt}${yearContext}
 
-For each category, write 2 TRUE facts and 1 FALSE fact (2-3 sentences each). Make them all plausible and detailed.
+For each category, write 2 TRUE facts and 1 FALSE fact (1-2 sentences each). Make them all plausible and specific.
 
 For FALSE facts ONLY: Include "explanation" field (10 words or less) explaining why it's false.
 For TRUE facts: No explanation needed.
