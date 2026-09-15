@@ -1253,6 +1253,32 @@ input, select, textarea {
     gap: 1rem;
 }
 
+/* Placeholder cards shown while a category is still being written */
+.item-skeleton {
+    pointer-events: none;
+    min-height: 4.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+.skeleton-line {
+    height: 0.8rem;
+    border-radius: 4px;
+    background: var(--color-border);
+    animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+    width: 60%;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+}
+
 .item {
     padding: 1.5rem;
     background: var(--color-card);
