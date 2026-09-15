@@ -2095,7 +2095,8 @@ async function loadPlace(location, addToHistory = true) {
         document.getElementById('categoriesContainer').innerHTML = `
             <div style="text-align: center; padding: 3rem 1rem; color: var(--color-text-light);">
                 <p style="font-size: 1.125rem; margin-bottom: 1rem;">Unable to generate content</p>
-                <p style="margin-bottom: 1.5rem;">Try searching for a different location or tap the logo to start over.</p>
+                <p style="margin-bottom: 0.75rem;">Try searching for a different location or tap the logo to start over.</p>
+                <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 1.5rem; word-break: break-word;">${escapeHtml(errorMessage)}</p>
                 <button onclick="showSearchSection()" style="padding: 0.75rem 1.5rem; background: var(--color-accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
                     Start Over
                 </button>
@@ -2186,24 +2187,10 @@ Return valid JSON:
     const response = await callLLM(prompt, 4000);
 
     // Parse JSON response
-    let placeData;
-    const jsonStart = response.indexOf('{');
-    if (jsonStart < 0) {
-        console.error('No JSON found in response:', response.slice(0, 200));
+    const placeData = extractPlaceJson(response);
+    if (!placeData) {
+        console.error('Failed to parse JSON from response:', response.slice(0, 500));
         throw new Error('Failed to parse location data');
-    }
-    const jsonText = response.slice(jsonStart, response.lastIndexOf('}') + 1 || undefined);
-    try {
-        placeData = JSON.parse(jsonText);
-    } catch (error) {
-        // Most likely a response cut off at the token cap; keep whatever complete categories we got
-        placeData = repairTruncatedJson(response.slice(jsonStart));
-        if (placeData) {
-            console.warn('Recovered a truncated JSON response');
-        } else {
-            console.error('Failed to parse JSON:', error);
-            throw new Error('Failed to parse location data');
-        }
     }
 
     // Keep only categories that have the full 2-truths-and-a-lie set
@@ -2269,7 +2256,11 @@ async function callLLM(prompt, maxTokens = 2000) {
                 messages: [
                     { role: 'user', content: prompt }
                 ],
-                max_tokens: maxTokens
+                max_tokens: maxTokens,
+                // Reasoning models (gpt-oss, Mercury, etc.) spend their output budget on
+                // hidden thinking, which on OpenRouter counts against max_tokens and can
+                // leave no room for the actual answer. This guide doesn't need it.
+                reasoning: { enabled: false, exclude: true }
             })
         });
 
@@ -2310,7 +2301,10 @@ async function callLLM(prompt, maxTokens = 2000) {
 
         const content = choice.message.content;
         if (typeof content !== 'string' || content.trim() === '') {
-            throw new Error('The model returned an empty response. Try again or pick a different model.');
+            if (choice.message.reasoning || (choice.message.reasoning_details || []).length) {
+                throw new Error(`Model "${AppState.currentModel}" spent its whole output on reasoning and returned no answer. Pick a different model.`);
+            }
+            throw new Error(`Model "${AppState.currentModel}" returned an empty response (finish reason: ${choice.finish_reason || 'unknown'}). Try again or pick a different model.`);
         }
 
         return content;
@@ -2337,6 +2331,42 @@ async function callLLM(prompt, maxTokens = 2000) {
     } finally {
         clearTimeout(timeoutId);
     }
+}
+
+// Pull the guide JSON out of a model response. Tolerates <think> blocks, markdown
+// code fences, chatty preambles containing braces, and output cut off at the token cap.
+function extractPlaceJson(response) {
+    let text = response
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/```(?:json)?/gi, '');
+
+    // Prefer the object that actually contains our schema
+    const schemaIdx = text.indexOf('"categories"');
+    const candidates = [];
+    for (let i = text.indexOf('{'); i >= 0; i = text.indexOf('{', i + 1)) {
+        if (schemaIdx < 0 || i < schemaIdx) candidates.push(i);
+    }
+    if (candidates.length === 0) return null;
+
+    const end = text.lastIndexOf('}') + 1;
+    for (const start of candidates) {
+        try {
+            const parsed = JSON.parse(text.slice(start, end));
+            if (parsed && typeof parsed === 'object' && Array.isArray(parsed.categories)) return parsed;
+        } catch (e) {
+            // try the next brace, or fall through to repair
+        }
+    }
+
+    // Most likely cut off at the token cap: keep whatever complete categories we got
+    for (const start of candidates) {
+        const repaired = repairTruncatedJson(text.slice(start));
+        if (repaired && Array.isArray(repaired.categories)) {
+            console.warn('Recovered a truncated JSON response');
+            return repaired;
+        }
+    }
+    return null;
 }
 
 // Salvage a JSON object that was cut off mid-stream (finish_reason "length").
@@ -3031,6 +3061,13 @@ function showSearchSection() {
     if (!AppState.homeMap) {
         initializeHomeMap();
     }
+}
+
+// Escape text for safe insertion into innerHTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
 }
 
 // Show Notification
