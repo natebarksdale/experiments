@@ -98,7 +98,10 @@ body {
 .info-icon {
     font-size: 1.125rem;
     line-height: 1;
-    font-family: 'Noto Color Emoji', 'Noto Emoji', sans-serif;
+    /* Monochrome only: prefer the Noto Emoji webfont and force text presentation
+       so browsers don't swap in the system color emoji glyph */
+    font-family: 'Noto Emoji', sans-serif;
+    font-variant-emoji: text;
     font-weight: 400;
     color: rgba(0, 0, 0, 0.15);
     display: flex;
