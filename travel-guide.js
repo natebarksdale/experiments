@@ -2259,7 +2259,7 @@ async function generateCategoryContent(location, locationType, categoryName) {
 
     const prompt = `Travel guide for "${location}", section "${categoryName}". ${writingStyle.prompt}${buildYearContext()}
 
-Write exactly 3 items for the "${categoryName}" section: 2 TRUE facts and 1 FALSE fact, 1-2 sentences each. Make them all plausible and specific. Wrap place names, landmarks, restaurants, museums, and key details in <strong> tags; every item needs at least 2 strong-tagged phrases. For the FALSE item only, add an "explanation" field (10 words or less) saying why it's false.
+Write exactly 3 items for the "${categoryName}" section: 2 TRUE facts and 1 FALSE fact. Each item must be at least 2 sentences (2-3 sentences). Make them all plausible and specific. Wrap place names, landmarks, restaurants, museums, and key details in <strong> tags; every item needs at least 2 strong-tagged phrases. For the FALSE item only, add an "explanation" field (10 words or less) saying why it's false.
 
 Return only valid JSON, no prose before or after:
 {
