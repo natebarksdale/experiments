@@ -1862,6 +1862,65 @@ input, select, textarea {
     margin-bottom: 0.25rem;
 }
 
+.footer-timing {
+    display: block;
+    margin-top: 0.25rem;
+    opacity: 0.75;
+}
+
+/* Per-model generation timings shown in the settings panel */
+.speed-log {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+}
+
+.speed-log:empty {
+    display: none;
+}
+
+.speed-log-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.speed-log-clear {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.speed-log table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.speed-log th,
+.speed-log td {
+    text-align: left;
+    padding: 0.2rem 0.3rem;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.speed-log td.num,
+.speed-log th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.speed-log td.model {
+    white-space: normal;
+    word-break: break-all;
+}
+
 .footer-model {
     margin-top: 0.75rem;
     font-size: 0.75rem;

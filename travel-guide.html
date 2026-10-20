@@ -145,6 +145,8 @@
                         <option value="google/gemini-2.5-flash-lite" selected>Default (Gemini 2.5 Flash Lite)</option>
                         <option value="openai/gpt-oss-120b">GPT-OSS 120B (fast, open-weight)</option>
                         <option value="inception/mercury-2.5">Mercury 2.5 (fastest, diffusion)</option>
+                        <option value="inception/mercury-3">Mercury 3 (diffusion, newest)</option>
+                        <option value="anthropic/claude-haiku-5.5">Claude Haiku 5.5</option>
                         <option value="__custom__">Enter Custom Model...</option>
                     </select>
 
@@ -156,6 +158,8 @@
                         </div>
                         <button class="btn-save" id="saveCustomModel" style="margin-top: 8px;">Use Custom Model</button>
                     </div>
+
+                    <div id="speedLog" class="speed-log"></div>
                 </div>
 
                 <div class="score-display">
@@ -309,7 +313,7 @@
                 </button>
                 <p>True/False Travel</p>
                 <p>Even the acurate parts are hallucinated.</p>
-                <p class="footer-model">Content generated using <span id="footerModelName">Gemini 2.5 Flash Lite</span></p>
+                <p class="footer-model">Content generated using <span id="footerModelName">Gemini 2.5 Flash Lite</span><span id="footerTiming" class="footer-timing"></span></p>
                 <p class="footer-credits">Developed by Nate Barksdale entirely using Claude Code on an iPhone, during spare moments over the course of a weekend. Note that the true/false distinction may be iffy when things get weird.</p>
             </div>
         </footer>

@@ -1338,6 +1338,7 @@ function initializeApp() {
 
     // Initialize footer model name
     updateFooterModelName();
+    renderSpeedLog();
 
     // Update API key status indicator
     updateApiKeyStatus();
@@ -2087,6 +2088,11 @@ async function loadPlace(location, addToHistory = true) {
     const isStale = () => generationId !== AppState.generationId;
     let firstArrived = false;
     const failures = [];
+    const startedAt = performance.now();
+    const sectionTimes = [];
+    let firstSectionMs = null;
+    const modelAtStart = AppState.currentModel;
+    document.getElementById('footerTiming').textContent = '';
 
     const outcomes = await Promise.all(categoryNames.map(async (categoryName, index) => {
         try {
@@ -2100,6 +2106,10 @@ async function loadPlace(location, addToHistory = true) {
                 category = await generateCategoryContent(location, locationType, categoryName);
             }
             if (isStale()) return false;
+
+            const elapsed = performance.now() - startedAt;
+            sectionTimes.push(elapsed);
+            if (firstSectionMs === null) firstSectionMs = elapsed;
 
             placeData.categories[index] = category;
             if (!placeData.coordinates && category.coordinates) {
@@ -2131,11 +2141,107 @@ async function loadPlace(location, addToHistory = true) {
     }
 
     const succeeded = outcomes.filter(Boolean).length;
+    if (succeeded > 0) {
+        recordGenerationTiming({
+            model: modelAtStart,
+            place: placeData.name,
+            totalMs: performance.now() - startedAt,
+            firstMs: firstSectionMs,
+            sections: succeeded,
+            failed: failures.length,
+            ts: Date.now()
+        });
+    }
     if (succeeded === 0) {
         showGenerationFailure(failures[0] || new Error('Failed to generate content'));
     } else if (failures.length > 0) {
         showNotification(`${failures.length} section${failures.length > 1 ? 's' : ''} failed to generate. ${describeGenerationError(failures[0])}`, 'error');
     }
+}
+
+// ---------- Generation timing (for comparing models) ----------
+const TIMING_LOG_KEY = 'travel_guide_timings';
+const TIMING_LOG_MAX = 40;
+
+function loadTimingLog() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(TIMING_LOG_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function recordGenerationTiming(entry) {
+    const log = loadTimingLog();
+    log.push(entry);
+    while (log.length > TIMING_LOG_MAX) log.shift();
+    try { localStorage.setItem(TIMING_LOG_KEY, JSON.stringify(log)); } catch (e) { /* ignore */ }
+
+    const fmt = ms => `${(ms / 1000).toFixed(1)}s`;
+    const footerTiming = document.getElementById('footerTiming');
+    if (footerTiming) {
+        footerTiming.textContent = `Generated in ${fmt(entry.totalMs)} (first section ${fmt(entry.firstMs)})`;
+    }
+    console.info(`[timing] ${entry.model}: ${entry.sections} sections in ${fmt(entry.totalMs)}, first section ${fmt(entry.firstMs)}`);
+    renderSpeedLog();
+}
+
+function median(values) {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// Per-model summary table in the settings panel
+function renderSpeedLog() {
+    const el = document.getElementById('speedLog');
+    if (!el) return;
+    const log = loadTimingLog();
+    if (log.length === 0) {
+        el.innerHTML = '';
+        return;
+    }
+
+    const byModel = new Map();
+    log.forEach(entry => {
+        if (!byModel.has(entry.model)) byModel.set(entry.model, []);
+        byModel.get(entry.model).push(entry);
+    });
+
+    const rows = Array.from(byModel.entries())
+        .map(([model, entries]) => ({
+            model,
+            runs: entries.length,
+            total: median(entries.map(e => e.totalMs)),
+            first: median(entries.map(e => e.firstMs).filter(v => v !== null)),
+            failed: entries.reduce((sum, e) => sum + (e.failed || 0), 0)
+        }))
+        .sort((a, b) => a.total - b.total);
+
+    const secs = ms => (ms / 1000).toFixed(1);
+    el.innerHTML = `
+        <div class="speed-log-title">
+            <span>Generation speed (median, this browser)</span>
+            <button type="button" class="speed-log-clear" id="clearSpeedLog">clear</button>
+        </div>
+        <table>
+            <thead><tr><th>Model</th><th class="num">Runs</th><th class="num">First</th><th class="num">All</th><th class="num">Failed</th></tr></thead>
+            <tbody>
+                ${rows.map(r => `<tr>
+                    <td class="model">${escapeHtml(r.model)}</td>
+                    <td class="num">${r.runs}</td>
+                    <td class="num">${secs(r.first)}s</td>
+                    <td class="num">${secs(r.total)}s</td>
+                    <td class="num">${r.failed}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+    document.getElementById('clearSpeedLog').addEventListener('click', () => {
+        try { localStorage.removeItem(TIMING_LOG_KEY); } catch (e) { /* ignore */ }
+        renderSpeedLog();
+    });
 }
 
 // Placeholder category shown while its request is in flight
